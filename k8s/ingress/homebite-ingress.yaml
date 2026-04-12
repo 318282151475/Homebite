@@ -1,0 +1,91 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: homebite-ingress
+  namespace: homebite
+  annotations:
+    # use nginx ingress controller
+    kubernetes.io/ingress.class: "nginx"
+
+    # rate limiting — 10 requests per second per IP
+    nginx.ingress.kubernetes.io/limit-rps: "10"
+
+    # enable JWT auth via external auth service
+    nginx.ingress.kubernetes.io/auth-url: "http://user-service.homebite.svc.cluster.local:8001/api/v1/users/internal/verify-token"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-User-ID,X-User-Role"
+
+    # timeout settings
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+
+spec:
+  rules:
+    - host: homebite.local    # in production: homebite.com
+      http:
+        paths:
+          # public routes — no auth
+          - path: /api/v1/users/register
+            pathType: Exact
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 8001
+
+          - path: /api/v1/users/login
+            pathType: Exact
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 8001
+
+          - path: /api/v1/users/refresh
+            pathType: Exact
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 8001
+
+          # protected routes
+          - path: /api/v1/users
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 8001
+
+          - path: /api/v1/chefs
+            pathType: Prefix
+            backend:
+              service:
+                name: chef-service
+                port:
+                  number: 8002
+
+          - path: /api/v1/orders
+            pathType: Prefix
+            backend:
+              service:
+                name: order-service
+                port:
+                  number: 8003
+
+          - path: /api/v1/deliveries
+            pathType: Prefix
+            backend:
+              service:
+                name: delivery-service
+                port:
+                  number: 8004
+
+          - path: /api/v1/logs
+            pathType: Prefix
+            backend:
+              service:
+                name: logging-service
+                port:
+                  number: 8006

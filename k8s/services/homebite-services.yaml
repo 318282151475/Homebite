@@ -1,0 +1,94 @@
+# user-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: homebite
+spec:
+  selector:
+    app: user-service     # routes traffic to pods with this label
+  ports:
+    - protocol: TCP
+      port: 8001          # port other services use to call this service
+      targetPort: 8001    # port the container is listening on
+  type: ClusterIP         # ClusterIP = internal only, not reachable from outside
+
+---
+# chef-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: chef-service
+  namespace: homebite
+spec:
+  selector:
+    app: chef-service
+  ports:
+    - protocol: TCP
+      port: 8002
+      targetPort: 8002
+  type: ClusterIP
+
+---
+# order-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: homebite
+spec:
+  selector:
+    app: order-service
+  ports:
+    - protocol: TCP
+      port: 8003
+      targetPort: 8003
+  type: ClusterIP
+
+---
+# delivery-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: delivery-service
+  namespace: homebite
+spec:
+  selector:
+    app: delivery-service
+  ports:
+    - protocol: TCP
+      port: 8004
+      targetPort: 8004
+  type: ClusterIP
+
+---
+# notification-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: homebite
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - protocol: TCP
+      port: 8005
+      targetPort: 8005
+  type: ClusterIP
+
+---
+# logging-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: logging-service
+  namespace: homebite
+spec:
+  selector:
+    app: logging-service
+  ports:
+    - protocol: TCP
+      port: 8006
+      targetPort: 8006
+  type: ClusterIP

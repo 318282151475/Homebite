@@ -1,0 +1,97 @@
+{
+  "title": "HomeBite — System Overview",
+  "uid": "homebite-overview",
+  "panels": [
+    {
+      "title": "Total Requests Per Second",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[1m])) by (job)",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "title": "HTTP Error Rate %",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status=~'5..'}[1m])) by (job) / sum(rate(http_requests_total[1m])) by (job) * 100",
+          "legendFormat": "{{job}} error %"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    },
+    {
+      "title": "Response Time P99 (seconds)",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))",
+          "legendFormat": "{{job}} p99"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+    },
+    {
+      "title": "Orders Placed Per Minute",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(orders_placed_total[1m]) * 60",
+          "legendFormat": "orders/min"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+    },
+    {
+      "title": "Orders In Progress (Live)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "orders_in_progress",
+          "legendFormat": "in progress"
+        }
+      ],
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16}
+    },
+    {
+      "title": "Chef Assignment Failures",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "increase(chef_assignment_failed_total[1h])",
+          "legendFormat": "failures last 1h"
+        }
+      ],
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16}
+    },
+    {
+      "title": "Login Attempts",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(login_attempts_total[5m])",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20}
+    },
+    {
+      "title": "Kafka Events Published",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(kafka_events_published_total[5m])",
+          "legendFormat": "{{topic}}"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20}
+    }
+  ],
+  "refresh": "10s",
+  "time": {"from": "now-1h", "to": "now"},
+  "timezone": "browser"
+}

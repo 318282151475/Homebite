@@ -1,0 +1,280 @@
+name: CI — Test and Build
+
+# Triggers — when does this pipeline run?
+on:
+  push:
+    branches: ["**"]        # every branch push
+  pull_request:
+    branches: [main]        # every PR targeting main
+
+jobs:
+
+  # ─────────────────────────────────────────
+  # JOB 1: Test user_service
+  # ─────────────────────────────────────────
+  test-user-service:
+    name: Test user_service
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          # cache key = hash of requirements.txt
+          # if requirements.txt unchanged, cached packages are used
+          # saves 1-2 minutes per run
+          key: ${{ runner.os }}-pip-user-${{ hashFiles('services/user_service/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-user-
+
+      - name: Install dependencies
+        working-directory: services/user_service
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: services/user_service
+        run: |
+          pytest tests/ -v --tb=short
+        env:
+          # test env vars — not real values
+          # tests use mocks so real DB/Kafka not needed
+          APP_ENV: test
+          DEBUG: "true"
+          DB_HOST: localhost
+          DB_PORT: "3306"
+          DB_NAME: user_db
+          DB_USER: root
+          DB_PASSWORD: secret
+          JWT_SECRET_KEY: test-secret-key
+          JWT_ALGORITHM: HS256
+          JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+          JWT_REFRESH_TOKEN_EXPIRE_DAYS: "7"
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          REDIS_DB: "0"
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+
+
+  # ─────────────────────────────────────────
+  # JOB 2: Test chef_service
+  # ─────────────────────────────────────────
+  test-chef-service:
+    name: Test chef_service
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-chef-${{ hashFiles('services/chef_service/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-chef-
+
+      - name: Install dependencies
+        working-directory: services/chef_service
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: services/chef_service
+        run: pytest tests/ -v --tb=short
+        env:
+          APP_ENV: test
+          DEBUG: "true"
+          DB_HOST: localhost
+          DB_PORT: "3306"
+          DB_NAME: chef_db
+          DB_USER: root
+          DB_PASSWORD: secret
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          REDIS_DB: "1"
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+
+
+  # ─────────────────────────────────────────
+  # JOB 3: Test order_service
+  # ─────────────────────────────────────────
+  test-order-service:
+    name: Test order_service
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-order-${{ hashFiles('services/order_service/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-order-
+
+      - name: Install dependencies
+        working-directory: services/order_service
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: services/order_service
+        run: pytest tests/ -v --tb=short
+        env:
+          APP_ENV: test
+          DEBUG: "true"
+          DB_HOST: localhost
+          DB_PORT: "3306"
+          DB_NAME: order_db
+          DB_USER: root
+          DB_PASSWORD: secret
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          REDIS_DB: "2"
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+
+
+  # ─────────────────────────────────────────
+  # JOB 4: Test delivery_service
+  # ─────────────────────────────────────────
+  test-delivery-service:
+    name: Test delivery_service
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-delivery-${{ hashFiles('services/delivery_service/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-delivery-
+
+      - name: Install dependencies
+        working-directory: services/delivery_service
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: services/delivery_service
+        run: pytest tests/ -v --tb=short
+        env:
+          APP_ENV: test
+          DEBUG: "true"
+          DB_HOST: localhost
+          DB_PORT: "3306"
+          DB_NAME: delivery_db
+          DB_USER: root
+          DB_PASSWORD: secret
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+
+
+  # ─────────────────────────────────────────
+  # JOB 5: Build Docker images
+  # Runs only after all tests pass
+  # ─────────────────────────────────────────
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs:
+      - test-user-service
+      - test-chef-service
+      - test-order-service
+      - test-delivery-service
+    # needs = this job runs only if all listed jobs pass
+    # if any test fails, images are not built
+    # this is the gate that blocks bad code from progressing
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        # Buildx enables advanced build features:
+        # - multi-platform builds (linux/amd64, linux/arm64)
+        # - build cache support
+        # - parallel builds
+
+      - name: Build user_service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/user_service
+          push: false     # CI only builds — does not push
+                          # pushing happens in CD pipeline
+          tags: homebite/user-service:${{ github.sha }}
+          cache-from: type=gha    # use GitHub Actions cache
+          cache-to: type=gha,mode=max
+
+      - name: Build chef_service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/chef_service
+          push: false
+          tags: homebite/chef-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build order_service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/order_service
+          push: false
+          tags: homebite/order-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build delivery_service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/delivery_service
+          push: false
+          tags: homebite/delivery-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build notification_service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/notification_service
+          push: false
+          tags: homebite/notification-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build logging_service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/logging_service
+          push: false
+          tags: homebite/logging-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

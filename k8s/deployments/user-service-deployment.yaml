@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: homebite
+  labels:
+    app: user-service
+spec:
+  replicas: 2   # run 2 instances for high availability
+                # if one pod dies, other still serves traffic
+
+  selector:
+    matchLabels:
+      app: user-service   # this deployment manages pods with this label
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1   # at most 1 pod can be down during deployment
+      maxSurge: 1         # at most 1 extra pod created during deployment
+    # Result: during update, old pod stays up until new pod is healthy
+    # Zero downtime deployment
+
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: homebite/user-service:latest
+          # imagePullPolicy: Always ensures latest image is pulled
+          # Never use "latest" tag in real production — use commit SHA
+          # e.g. homebite/user-service:abc1234
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8001
+
+          # Environment from ConfigMap — non-sensitive
+          envFrom:
+            - configMapRef:
+                name: homebite-config
+
+          # Environment from Secrets — sensitive
+          env:
+            - name: APP_NAME
+              value: "user_service"
+            - name: APP_PORT
+              value: "8001"
+            - name: DB_NAME
+              value: "user_db"
+            - name: REDIS_DB
+              value: "0"
+            - name: KAFKA_CONSUMER_GROUP
+              value: "user-service-group"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: homebite-secrets
+                  key: DB_PASSWORD
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: homebite-secrets
+                  key: DB_USER
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: homebite-secrets
+                  key: JWT_SECRET_KEY
+
+          # Resource limits — critical in production
+          # Without limits one pod can consume all node resources
+          # and starve other pods
+          resources:
+            requests:
+              memory: "128Mi"   # guaranteed memory
+              cpu: "100m"       # 100 millicores = 0.1 CPU core guaranteed
+            limits:
+              memory: "256Mi"   # never exceed this — pod killed if it does
+              cpu: "500m"       # never exceed 0.5 CPU core
+
+          # Liveness probe — is the container alive?
+          # Failure → Kubernetes restarts the pod
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 20   # wait 20s before first check
+                                      # gives app time to start
+            periodSeconds: 15         # check every 15 seconds
+            failureThreshold: 3       # restart after 3 consecutive failures
+
+          # Readiness probe — is the container ready for traffic?
+          # Failure → Kubernetes removes pod from load balancer
+          # but does NOT restart it
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3

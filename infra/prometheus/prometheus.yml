@@ -1,0 +1,56 @@
+global:
+  scrape_interval: 15s      # scrape every 15 seconds
+  evaluation_interval: 15s  # evaluate alerting rules every 15 seconds
+
+scrape_configs:
+
+  # scrape Prometheus itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # scrape all FastAPI services
+  - job_name: "user_service"
+    static_configs:
+      - targets: ["user_service:8001"]
+    metrics_path: "/metrics"
+
+  - job_name: "chef_service"
+    static_configs:
+      - targets: ["chef_service:8002"]
+    metrics_path: "/metrics"
+
+  - job_name: "order_service"
+    static_configs:
+      - targets: ["order_service:8003"]
+    metrics_path: "/metrics"
+
+  - job_name: "delivery_service"
+    static_configs:
+      - targets: ["delivery_service:8004"]
+    metrics_path: "/metrics"
+
+  - job_name: "notification_service"
+    static_configs:
+      - targets: ["notification_service:8005"]
+    metrics_path: "/metrics"
+
+  - job_name: "logging_service"
+    static_configs:
+      - targets: ["logging_service:8006"]
+    metrics_path: "/metrics"
+
+  # scrape MySQL exporter
+  - job_name: "mysql"
+    static_configs:
+      - targets: ["mysql_exporter:9104"]
+
+  # scrape Redis exporter
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis_exporter:9121"]
+
+  # scrape Kafka exporter
+  - job_name: "kafka"
+    static_configs:
+      - targets: ["kafka_exporter:9308"]

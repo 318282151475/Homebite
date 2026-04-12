@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chef-service
+  namespace: homebite
+  labels:
+    app: chef-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chef-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: chef-service
+    spec:
+      containers:
+        - name: chef-service
+          image: homebite/chef-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8002
+          envFrom:
+            - configMapRef:
+                name: homebite-config
+          env:
+            - name: APP_NAME
+              value: "chef_service"
+            - name: APP_PORT
+              value: "8002"
+            - name: DB_NAME
+              value: "chef_db"
+            - name: REDIS_DB
+              value: "1"
+            - name: KAFKA_CONSUMER_GROUP
+              value: "chef-service-group"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: homebite-secrets
+                  key: DB_PASSWORD
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: homebite-secrets
+                  key: DB_USER
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
