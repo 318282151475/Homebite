@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, Any
 from datetime import datetime
-from logging_service.app.models.log import LogLevel
+from ..models.log import LogLevel
 
 
 class EventLogResponse(BaseModel):

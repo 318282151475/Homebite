@@ -53,10 +53,10 @@ async def consume_events() -> None:
             elif event_type == "chef.assignment_failed":
                 await handle_chef_assignment_failed(event)
 
-            elif event_type == "delivery_service.started":
+            elif event_type == "delivery.started":
                 await handle_delivery_started(event)
 
-            elif event_type == "delivery_service.completed":
+            elif event_type == "delivery.completed":
                 await handle_delivery_completed(event)
 
             await _consumer.commit()

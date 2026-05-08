@@ -26,6 +26,7 @@ class OrderItem(BaseModel):
 
 class OrderCreateRequest(BaseModel):
     user_id: int
+    chef_id: int
     items: List[OrderItem]
     delivery_address: str
     city: str

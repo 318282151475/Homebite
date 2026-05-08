@@ -3,9 +3,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.database import get_db
-from ...schemas.chef import ChefCreateRequest, ChefStatusUpdateRequest, ChefResponse
-from ...crud.chef import get_chef_by_id, get_chef_by_user_id, get_available_chefs, create_chef, update_chef_status
-from ...core.exceptions import ChefNotFoundException, ChefAlreadyExistsException
+from app.schemas.chef import ChefCreateRequest, ChefStatusUpdateRequest, ChefResponse
+from app.crud.chef import (
+    get_chef_by_id,
+    get_chef_by_user_id,
+    get_available_chefs,
+    create_chef,
+    update_chef_status,
+)
+from app.core.exceptions import ChefNotFoundException, ChefAlreadyExistsException
 
 router = APIRouter(prefix="/api/v1/chefs", tags=["chefs"])
 
@@ -17,16 +23,26 @@ async def register_chef(data: ChefCreateRequest, db: AsyncSession = Depends(get_
     return await create_chef(db, data)
 
 
+@router.get("/user/{user_id}", response_model=ChefResponse)
+async def get_chef_by_user(user_id: int, db: AsyncSession = Depends(get_db)):
+    """Find chef profile by user_id — used after login."""
+    chef = await get_chef_by_user_id(db, user_id)
+    if not chef:
+        raise ChefNotFoundException()
+    return chef
+
+
+@router.get("/available/{city}", response_model=List[ChefResponse])
+async def list_available_chefs(city: str, db: AsyncSession = Depends(get_db)):
+    return await get_available_chefs(db, city)
+
+
 @router.get("/{chef_id}", response_model=ChefResponse)
 async def get_chef(chef_id: int, db: AsyncSession = Depends(get_db)):
     chef = await get_chef_by_id(db, chef_id)
     if not chef:
         raise ChefNotFoundException()
     return chef
-
-@router.get("/available/{city}", response_model=List[ChefResponse])
-async def list_available_chefs(city: str, db: AsyncSession = Depends(get_db)):
-    return await get_available_chefs(db, city)
 
 
 @router.patch("/{chef_id}/status", response_model=ChefResponse)

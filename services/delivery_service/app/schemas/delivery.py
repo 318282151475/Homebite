@@ -1,7 +1,7 @@
-from pydantic import BaseModel, field_validator
-from typing import Optional
+from pydantic import BaseModel
 from datetime import datetime
-from delivery_service.app.models.delivery import DeliveryStatus
+from typing import Optional
+from ..models.delivery import DeliveryStatus
 
 
 class DeliveryCreateRequest(BaseModel):
@@ -11,13 +11,7 @@ class DeliveryCreateRequest(BaseModel):
     delivery_address: str
     city: str
     pincode: str
-
-    @field_validator("pincode")
-    @classmethod
-    def pincode_format(cls, v: str) -> str:
-        if not v.isdigit() or len(v) != 6:
-            raise ValueError("Pincode must be 6 digits")
-        return v
+    estimated_delivery_minutes: int = 45
 
 
 class DeliveryStatusUpdateRequest(BaseModel):
@@ -26,21 +20,28 @@ class DeliveryStatusUpdateRequest(BaseModel):
     delivery_person_phone: Optional[str] = None
 
 
+class DeliveryAcceptRequest(BaseModel):
+    delivery_person_id: int
+    delivery_person_name: str
+    delivery_person_phone: Optional[str] = None
+
+
 class DeliveryResponse(BaseModel):
     id: int
     order_id: int
     chef_id: int
     user_id: int
-    status: DeliveryStatus
+    delivery_person_id: Optional[int] = None
+    delivery_person_name: Optional[str] = None
+    delivery_person_phone: Optional[str] = None
     delivery_address: str
     city: str
     pincode: str
-    delivery_person_name: Optional[str]
-    delivery_person_phone: Optional[str]
+    status: DeliveryStatus
     estimated_delivery_minutes: int
+    accepted_at: Optional[datetime] = None
+    picked_up_at: Optional[datetime] = None
+    delivered_at: Optional[datetime] = None
     created_at: datetime
-    updated_at: datetime
-    picked_up_at: Optional[datetime]
-    delivered_at: Optional[datetime]
 
     model_config = {"from_attributes": True}

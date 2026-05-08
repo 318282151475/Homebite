@@ -3,8 +3,8 @@ import logging
 from aiokafka import AIOKafkaConsumer
 from app.config import get_settings
 from app.database import AsyncSessionLocal
-from logging_service.app.crud.log import create_log
-from logging_service.app.models.log import LogLevel
+from ..crud.log import create_log
+from ..models.log import LogLevel
 
 settings = get_settings()
 logger = logging.getLogger(__name__)

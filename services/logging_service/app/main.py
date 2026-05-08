@@ -9,7 +9,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from app.config import get_settings
 from app.database import engine, Base
 from app.api.v1.routes import router
-from logging_service.app.kafka.consumer import start_consumer, stop_consumer, consume_events
+from app.kafka.consumer import start_consumer, stop_consumer, consume_events
 
 settings = get_settings()
 logging.basicConfig(

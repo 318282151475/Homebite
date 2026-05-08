@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-init
+  namespace: homebite
+spec:
+  template:
+    spec:
+      containers:
+        - name: kafka-init
+          image: confluentinc/cp-kafka:7.6.0
+          command:
+            - /bin/bash
+            - /scripts/create_topics.sh
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: scripts
+          configMap:
+            name: kafka-init-script
+      restartPolicy: OnFailure
+  backoffLimit: 3

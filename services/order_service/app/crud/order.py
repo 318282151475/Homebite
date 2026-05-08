@@ -12,6 +12,7 @@ def calculate_total(items: list) -> float:
 async def create_order(db: AsyncSession, data: OrderCreateRequest) -> Order:
     order = Order(
         user_id=data.user_id,
+        chef_id=data.chef_id,
         items=[item.model_dump() for item in data.items],
         total_amount=calculate_total(data.items),
         delivery_address=data.delivery_address,
@@ -39,6 +40,21 @@ async def get_orders_by_user(db: AsyncSession, user_id: int) -> List[Order]:
     )
     return result.scalars().all()
 
+async def get_orders_by_chef(db: AsyncSession, chef_id: int) -> List[Order]:
+    """Returns all active orders assigned to a specific chef."""
+    result = await db.execute(
+        select(Order)
+        .where(
+            Order.chef_id == chef_id,
+            Order.status.not_in([
+                OrderStatus.DELIVERED,
+                OrderStatus.CANCELLED,
+                OrderStatus.FAILED,
+            ])
+        )
+        .order_by(Order.created_at.desc())
+    )
+    return result.scalars().all()
 
 async def update_order_status(
     db: AsyncSession,

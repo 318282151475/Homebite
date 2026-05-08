@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 import redis.asyncio as aioredis
 from app.config import get_settings
-from app.core.exceptions import InvalidTokenException, TokenRevokedException
+from .exceptions import InvalidTokenException, TokenRevokedException
 
 settings = get_settings()
 

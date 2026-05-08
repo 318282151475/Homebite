@@ -14,8 +14,7 @@ async def start_producer() -> None:
     _producer = AIOKafkaProducer(
         bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
         value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-        acks="all",   # wait for all replicas — no data loss
-        retries=3,
+        acks="all",
     )
     await _producer.start()
     logger.info("Kafka producer started")

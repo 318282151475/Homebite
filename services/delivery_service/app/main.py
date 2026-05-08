@@ -11,7 +11,7 @@ from app.config import get_settings
 from app.database import engine, Base
 from app.api.v1.routes import router
 from app.kafka.producer import start_producer, stop_producer
-from delivery_service.app.kafka.consumer import start_consumer, stop_consumer, consume_events
+from app.kafka.consumer import start_consumer, stop_consumer, consume_events
 
 settings = get_settings()
 logging.basicConfig(

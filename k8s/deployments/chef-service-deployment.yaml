@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: chef-service
-          image: homebite/chef-service:latest
+          image: tejassh1701/homebite-chef-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8002

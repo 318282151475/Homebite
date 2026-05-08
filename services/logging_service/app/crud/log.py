@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional, List
-from logging_service.app.models.log import EventLog, LogLevel
+from ..models.log import EventLog, LogLevel
 
 
 async def create_log(

@@ -7,6 +7,7 @@ from app.database import Base
 class UserRole(str, enum.Enum):
     CUSTOMER = "customer"
     CHEF = "chef"
+    DELIVERY_PERSON = "delivery_person"
     ADMIN = "admin"
 
 
@@ -22,8 +23,6 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
 
-    # server_default = DB sets this, not Python
-    # onupdate = DB updates this automatically on every row change
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

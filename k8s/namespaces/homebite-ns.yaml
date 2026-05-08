@@ -4,4 +4,4 @@ metadata:
   name: homebite
   labels:
     app: homebite
-    environment: production
+    environment: local

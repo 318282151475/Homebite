@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: homebite/notification-service:latest
+          image: tejassh1701/homebite-notification-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8005

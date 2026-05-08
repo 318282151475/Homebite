@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: homebite
+  labels:
+    app: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: confluentinc/cp-kafka:7.6.0
+          command:
+            - bash
+            - -c
+            - |
+              echo "Waiting for Zookeeper..."
+              sleep 15
+              echo "Starting Kafka..."
+              /etc/confluent/docker/run
+          ports:
+            - containerPort: 9092
+          env:
+            - name: KAFKA_BROKER_ID
+              value: "1"
+            - name: KAFKA_ZOOKEEPER_CONNECT
+              value: "zookeeper:2181"
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "PLAINTEXT:PLAINTEXT"
+            - name: KAFKA_LISTENERS
+              value: "PLAINTEXT://0.0.0.0:9092"
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://kafka-broker:9092"
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+              value: "false"
+            - name: KAFKA_LOG_RETENTION_HOURS
+              value: "168"
+            - name: CONFLUENT_SUPPORT_METRICS_ENABLE
+              value: "false"
+            - name: KAFKA_OPTS
+              value: "-Dzookeeper.4lw.commands.whitelist=*"
+            - name: KAFKA_HEAP_OPTS                        # ← NEW: cap JVM heap
+              value: "-Xmx512m -Xms512m"
+          volumeMounts:
+            - name: kafka-storage
+              mountPath: /var/lib/kafka/data
+          resources:
+            requests:
+              memory: "768Mi"                              # ← increased
+              cpu: "250m"
+            limits:
+              memory: "2Gi"                               # ← increased from 1Gi
+              cpu: "1000m"                                # ← increased from 500m
+          livenessProbe:
+            exec:
+              command:
+                - bash
+                - -c
+                - "timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/9092'"
+            initialDelaySeconds: 90                       # ← increased from 60
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - bash
+                - -c
+                - "timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/9092'"
+            initialDelaySeconds: 75                       # ← increased from 45
+            periodSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: kafka-storage
+          persistentVolumeClaim:
+            claimName: kafka-pvc

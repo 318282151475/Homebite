@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      - job_name: "prometheus"
+        static_configs:
+          - targets: ["localhost:9090"]
+
+      - job_name: "user_service"
+        static_configs:
+          - targets:
+            - "user-service.homebite.svc.cluster.local:8001"
+        metrics_path: "/metrics"
+
+      - job_name: "chef_service"
+        static_configs:
+          - targets:
+            - "chef-service.homebite.svc.cluster.local:8002"
+        metrics_path: "/metrics"
+
+      - job_name: "order_service"
+        static_configs:
+          - targets:
+            - "order-service.homebite.svc.cluster.local:8003"
+        metrics_path: "/metrics"
+
+      - job_name: "delivery_service"
+        static_configs:
+          - targets:
+            - "delivery-service.homebite.svc.cluster.local:8004"
+        metrics_path: "/metrics"
+
+      - job_name: "notification_service"
+        static_configs:
+          - targets:
+            - "notification-service.homebite.svc.cluster.local:8005"
+        metrics_path: "/metrics"
+
+      - job_name: "logging_service"
+        static_configs:
+          - targets:
+            - "logging-service.homebite.svc.cluster.local:8006"
+        metrics_path: "/metrics"

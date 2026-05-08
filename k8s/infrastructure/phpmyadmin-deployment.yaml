@@ -1,0 +1,42 @@
+# LOCAL ONLY — remove before deploying to AWS production
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phpmyadmin
+  namespace: homebite
+  labels:
+    app: phpmyadmin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phpmyadmin
+  template:
+    metadata:
+      labels:
+        app: phpmyadmin
+    spec:
+      containers:
+        - name: phpmyadmin
+          image: phpmyadmin:5.2
+          ports:
+            - containerPort: 80
+          env:
+            - name: PMA_HOST
+              value: "mysql"
+            - name: PMA_PORT
+              value: "3306"
+            - name: PMA_USER
+              value: "root"
+            - name: PMA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: homebite-secrets
+                  key: DB_PASSWORD
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"

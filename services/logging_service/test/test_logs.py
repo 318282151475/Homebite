@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 from unittest.mock import AsyncMock, patch
 from app.main import app
-from logging_service.app.kafka.consumer import persist_event_log
+from app.kafka.consumer import persist_event_log
 
 
 @pytest.mark.asyncio

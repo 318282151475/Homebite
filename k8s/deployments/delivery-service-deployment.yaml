@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: delivery-service
-          image: homebite/delivery-service:latest
+          image: tejassh1701/homebite-delivery-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8004

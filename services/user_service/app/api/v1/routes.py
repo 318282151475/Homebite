@@ -4,35 +4,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import time
 
 from app.database import get_db
-from app.schemas.user import (
-    UserRegisterRequest,
-    UserLoginRequest,
-    TokenRefreshRequest,
-    UserResponse,
-    TokenResponse,
-    UserProfileResponse,
-)
-from app.crud import user as user_crud
-from app.core.security import (
-    verify_password,
-    create_access_token,
-    create_refresh_token,
-    verify_access_token,
-    blacklist_token,
-    decode_token,
-)
-from app.core.exceptions import (
-    UserAlreadyExistsException,
-    InvalidCredentialsException,
-    UserNotFoundException,
-    InactiveUserException,
-    InvalidTokenException,
-)
+from ...schemas.user import UserRegisterRequest, UserLoginRequest, TokenRefreshRequest, UserResponse, TokenResponse, \
+    UserProfileResponse, AdminCreateUserRequest
+from ...crud import user as user_crud
+from ...core.security import verify_password, create_access_token, create_refresh_token, verify_access_token, \
+    blacklist_token, decode_token
+from ...core.exceptions import UserAlreadyExistsException, InvalidCredentialsException, UserNotFoundException, \
+    InactiveUserException, InvalidTokenException
 from app.kafka.producer import publish_event
 from app.config import get_settings
 
 #Metrics import
-from app.metrics import users_registered_total, login_attempts_total, token_blacklisted_total
+from ...metrics import users_registered_total, login_attempts_total, token_blacklisted_total
 
 
 settings = get_settings()
@@ -156,6 +139,44 @@ async def get_profile(
 
     return UserProfileResponse(user=UserResponse.model_validate(user))
 
+
+# Admin only endpoint — creates delivery person accounts
+# In production add role check middleware
+# For now protected by JWT only
+@router.post("/admin/create-user", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def admin_create_user(
+    data: AdminCreateUserRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: AsyncSession = Depends(get_db),
+):
+    # verify token
+    payload = await verify_access_token(credentials.credentials)
+
+    # only admin can create delivery persons
+    if payload.get("role") != "admin":
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin can create user accounts"
+        )
+
+    if await user_crud.get_user_by_email(db, data.email):
+        raise UserAlreadyExistsException(field="email")
+
+    if data.phone and await user_crud.get_user_by_phone(db, data.phone):
+        raise UserAlreadyExistsException(field="phone")
+
+    # use UserRegisterRequest compatible create
+    from ...schemas.user import UserRegisterRequest
+    register_data = UserRegisterRequest(
+        full_name=data.full_name,
+        email=data.email,
+        phone=data.phone,
+        password=data.password,
+        role=data.role,
+    )
+    user = await user_crud.create_user(db, register_data)
+    return user
 
 # Called by Nginx auth_request directive
 # Nginx hits this before forwarding any protected request

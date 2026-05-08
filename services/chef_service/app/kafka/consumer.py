@@ -5,8 +5,10 @@ import logging
 from aiokafka import AIOKafkaConsumer
 from app.config import get_settings
 from app.database import AsyncSessionLocal
-from chef_service.app.crud.chef import get_available_chefs, assign_chef_to_order
+from app.crud.chef import get_available_chefs, assign_chef_to_order, get_chef_by_id
+from app.models.chef import ChefStatus
 from app.kafka.producer import publish_event
+from app.metrics import chefs_assigned_total, chef_assignment_failed_total, kafka_events_consumed_total
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -20,15 +22,8 @@ async def start_consumer() -> None:
         settings.KAFKA_TOPIC_ORDER_CREATED,
         bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
         group_id=settings.KAFKA_CONSUMER_GROUP,
-        # auto_offset_reset="earliest" — if this consumer restarts,
-        # it replays all unprocessed messages from where it left off
-        # "latest" would skip messages received while consumer was down
         auto_offset_reset="earliest",
         value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-        # enable_auto_commit=False — we manually commit offset AFTER
-        # successfully processing the message
-        # If we crash mid-processing, message will be redelivered
-        # This ensures at-least-once delivery_service guarantee
         enable_auto_commit=False,
     )
     await _consumer.start()
@@ -58,13 +53,10 @@ async def consume_events() -> None:
             if event.get("event") == "order.created":
                 await handle_order_created(event)
 
-            # Manually commit offset only after successful processing
             await _consumer.commit()
 
         except Exception as e:
             logger.error(f"Error processing event: {e}", exc_info=True)
-            # Do NOT commit offset on failure
-            # Kafka will redeliver this message
 
 
 async def handle_order_created(event: dict) -> None:
@@ -75,30 +67,60 @@ async def handle_order_created(event: dict) -> None:
     3. Publish chef.assigned event
     If no chef is available, publish chef.assignment_failed event
     """
+
     order_id = event.get("order_id")
     city = event.get("city")
+    user_id = event.get("user_id")
+    requested_chef_id = event.get("chef_id")
 
     async with AsyncSessionLocal() as db:
         try:
-            available_chefs = await get_available_chefs(db, city)
+            if requested_chef_id:
+                # Customer chose a specific chef — use that chef
+                assigned_chef = await get_chef_by_id(db, requested_chef_id)
+                if not assigned_chef or assigned_chef.status != ChefStatus.AVAILABLE:
+                    # Chef not available — fall back to auto-assign
+                    available_chefs = await get_available_chefs(db, city)
+                    if not available_chefs:
+                        await publish_event(
+                            topic=settings.KAFKA_TOPIC_CHEF_ASSIGNED,
+                            event={
+                                "event": "chef.assignment_failed",
+                                "order_id": order_id,
+                                "reason": "Requested chef not available",
+                                "user_id": user_id,
+                            }
+                        )
+                        chef_assignment_failed_total.inc()
+                        return
+                    assigned_chef = max(available_chefs, key=lambda c: c.rating)
+            else:
+                # No chef specified — auto-assign best available
+                available_chefs = await get_available_chefs(db, city)
+                if not available_chefs:
+                    await publish_event(
+                        topic=settings.KAFKA_TOPIC_CHEF_ASSIGNED,
+                        event={
+                            "event": "chef.assignment_failed",
+                            "order_id": order_id,
+                            "reason": "No available chefs",
+                            "user_id": user_id,
+                        }
+                        )
+                    chef_assignment_failed_total.inc()
+                    return
+                assigned_chef = max(available_chefs, key=lambda c: c.rating)
 
-            if not available_chefs:
-                logger.warning(f"No available chefs for order {order_id} in {city}")
-                await publish_event(
-                    topic=settings.KAFKA_TOPIC_CHEF_ASSIGNED,
-                    event={
-                        "event": "chef.assignment_failed",
-                        "order_id": order_id,
-                        "reason": "No available chefs",
-                    }
-                )
-                return
-
-            # Pick chef with highest rating among available ones
-            best_chef = max(available_chefs, key=lambda c: c.rating)
-
-            assigned_chef = await assign_chef_to_order(db, best_chef.id)
+            # Mark chef as busy
+            assigned_chef = await assign_chef_to_order(db, assigned_chef.id)
             await db.commit()
+
+            # increment metrics after successful assignment
+            chefs_assigned_total.inc()
+            kafka_events_consumed_total.labels(
+                topic="order.created",
+                event_type="order.created"
+            ).inc()
 
             await publish_event(
                 topic=settings.KAFKA_TOPIC_CHEF_ASSIGNED,
@@ -108,9 +130,11 @@ async def handle_order_created(event: dict) -> None:
                     "chef_id": assigned_chef.id,
                     "chef_name": assigned_chef.full_name,
                     "city": city,
+                    "user_id": user_id,
+                    "pincode": event.get("pincode", ""),
+                    "delivery_address": event.get("delivery_address", ""),
                 }
             )
-            logger.info(f"Chef {assigned_chef.id} assigned to order {order_id}")
 
         except Exception as e:
             await db.rollback()

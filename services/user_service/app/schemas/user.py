@@ -1,11 +1,9 @@
 from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime
 from typing import Optional
-from app.models.user import UserRole
+from ..models.user import UserRole
 import re
 
-
-# --- Request Schemas ---
 
 class UserRegisterRequest(BaseModel):
     full_name: str
@@ -53,9 +51,6 @@ class TokenRefreshRequest(BaseModel):
     refresh_token: str
 
 
-# --- Response Schemas ---
-# Rule: never return hashed_password to client
-
 class UserResponse(BaseModel):
     id: int
     full_name: str
@@ -79,3 +74,13 @@ class TokenResponse(BaseModel):
 class UserProfileResponse(BaseModel):
     user: UserResponse
     message: str = "success"
+
+
+# Admin creates delivery person — no password strength requirement
+# Admin sets initial password, delivery person should change it
+class AdminCreateUserRequest(BaseModel):
+    full_name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    password: str
+    role: UserRole = UserRole.DELIVERY_PERSON

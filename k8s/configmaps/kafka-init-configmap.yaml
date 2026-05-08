@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-init-script
+  namespace: homebite
+data:
+  create_topics.sh: |
+    #!/bin/bash
+    KAFKA_BROKER="kafka-broker:9092"
+    MAX_RETRIES=10
+    RETRY_INTERVAL=10
+
+    echo "Waiting for Kafka to be ready..."
+    for i in $(seq 1 $MAX_RETRIES); do
+      kafka-topics --bootstrap-server $KAFKA_BROKER --list > /dev/null 2>&1
+      if [ $? -eq 0 ]; then
+        echo "Kafka is ready!"
+        break
+      fi
+      echo "Attempt $i/$MAX_RETRIES — waiting ${RETRY_INTERVAL}s..."
+      sleep $RETRY_INTERVAL
+    done
+
+    echo "Creating topics..."
+
+    kafka-topics --create --bootstrap-server $KAFKA_BROKER \
+      --topic user.registered --partitions 3 \
+      --replication-factor 1 --if-not-exists
+
+    kafka-topics --create --bootstrap-server $KAFKA_BROKER \
+      --topic order.created --partitions 3 \
+      --replication-factor 1 --if-not-exists
+
+    kafka-topics --create --bootstrap-server $KAFKA_BROKER \
+      --topic chef.assigned --partitions 3 \
+      --replication-factor 1 --if-not-exists
+
+    kafka-topics --create --bootstrap-server $KAFKA_BROKER \
+      --topic delivery.started --partitions 3 \
+      --replication-factor 1 --if-not-exists
+
+    kafka-topics --create --bootstrap-server $KAFKA_BROKER \
+      --topic delivery.completed --partitions 3 \
+      --replication-factor 1 --if-not-exists
+
+    echo "All topics created!"
+    kafka-topics --list --bootstrap-server $KAFKA_BROKER
