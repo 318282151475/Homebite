@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+# Added this section
+permissions:
+  contents: write    # allows pipeline to commit and push back to repo
+
 env:
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
   IMAGE_TAG: ${{ github.sha }}
