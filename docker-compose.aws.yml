@@ -1,0 +1,249 @@
+services:
+
+  # ─────────────────────────────────────────
+  # INFRASTRUCTURE
+  # MySQL REMOVED — replaced by AWS RDS
+  # ─────────────────────────────────────────
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: homebite_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./infra/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - homebite_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: homebite_zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+    networks:
+      - homebite_network
+    healthcheck:
+      test: ["CMD", "cub", "zk-ready", "localhost:2181", "30"]
+      interval: 10s
+      timeout: 35s
+      retries: 5
+      start_period: 20s
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: homebite_kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_MESSAGE_MAX_BYTES: 1048576
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - homebite_network
+    healthcheck:
+      test: ["CMD", "cub", "kafka-ready", "-b", "localhost:9092", "1", "30"]
+      interval: 15s
+      timeout: 35s
+      retries: 5
+      start_period: 40s
+
+  kafka_init:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: homebite_kafka_init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./infra/kafka/create_topics.sh:/create_topics.sh
+    entrypoint: ["/bin/bash", "/create_topics.sh"]
+    networks:
+      - homebite_network
+
+  # ─────────────────────────────────────────
+  # APPLICATION SERVICES
+  # All use .env.aws instead of .env
+  # depends_on mysql REMOVED — using RDS
+  # ─────────────────────────────────────────
+
+  user_service:
+    build:
+      context: ./services/user_service
+      dockerfile: Dockerfile
+    container_name: homebite_user_service
+    restart: unless-stopped
+    env_file:
+      - ./services/user_service/.env.aws
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka_init:
+        condition: service_completed_successfully
+    ports:
+      - "8001:8001"
+    networks:
+      - homebite_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  chef_service:
+    build:
+      context: ./services/chef_service
+      dockerfile: Dockerfile
+    container_name: homebite_chef_service
+    restart: unless-stopped
+    env_file:
+      - ./services/chef_service/.env.aws
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka_init:
+        condition: service_completed_successfully
+    ports:
+      - "8002:8002"
+    networks:
+      - homebite_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  order_service:
+    build:
+      context: ./services/order_service
+      dockerfile: Dockerfile
+    container_name: homebite_order_service
+    restart: unless-stopped
+    env_file:
+      - ./services/order_service/.env.aws
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka_init:
+        condition: service_completed_successfully
+    ports:
+      - "8003:8003"
+    networks:
+      - homebite_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  delivery_service:
+    build:
+      context: ./services/delivery_service
+      dockerfile: Dockerfile
+    container_name: homebite_delivery_service
+    restart: unless-stopped
+    env_file:
+      - ./services/delivery_service/.env.aws
+    depends_on:
+      kafka_init:
+        condition: service_completed_successfully
+    ports:
+      - "8004:8004"
+    networks:
+      - homebite_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  logging_service:
+    build:
+      context: ./services/logging_service
+      dockerfile: Dockerfile
+    container_name: homebite_logging_service
+    restart: unless-stopped
+    env_file:
+      - ./services/logging_service/.env.aws
+    depends_on:
+      kafka_init:
+        condition: service_completed_successfully
+    ports:
+      - "8006:8006"
+    networks:
+      - homebite_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: homebite_nginx
+    restart: unless-stopped
+    depends_on:
+      user_service:
+        condition: service_healthy
+      chef_service:
+        condition: service_healthy
+      order_service:
+        condition: service_healthy
+      delivery_service:
+        condition: service_healthy
+      logging_service:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend/index.html:/usr/share/nginx/html/index.html:ro
+    networks:
+      - homebite_network
+
+# ─────────────────────────────────────────
+# NETWORKS
+# ─────────────────────────────────────────
+
+networks:
+  homebite_network:
+    driver: bridge
+
+# ─────────────────────────────────────────
+# VOLUMES
+# mysql_data REMOVED — using RDS
+# prometheus_data REMOVED — not deployed
+# grafana_data REMOVED — not deployed
+# ─────────────────────────────────────────
+
+volumes:
+  redis_data:
+  zookeeper_data:
+  zookeeper_log:
+  kafka_data:

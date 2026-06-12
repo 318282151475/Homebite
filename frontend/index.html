@@ -405,7 +405,13 @@
 </div>
 
 <script>
-const API={USERS:'http://localhost:8080/api/v1/users',CHEFS:'http://localhost:8080/api/v1/chefs',ORDERS:'http://localhost:8080/api/v1/orders',DELIVERY:'http://localhost:8080/api/v1/deliveries'};
+const BASE = window.location.origin;
+const API = {
+  USERS:    `${BASE}/api/v1/users`,
+  CHEFS:    `${BASE}/api/v1/chefs`,
+  ORDERS:   `${BASE}/api/v1/orders`,
+  DELIVERY: `${BASE}/api/v1/deliveries`
+};
 let state={token:localStorage.getItem('hb_token')||null,user:JSON.parse(localStorage.getItem('hb_user')||'null'),chef:JSON.parse(localStorage.getItem('hb_chef')||'null'),selectedChef:null,items:[],timer:null};
 
 window.addEventListener('DOMContentLoaded',()=>{

@@ -2,6 +2,8 @@
 **/.env
 **/.env.*
 !**/.env.example
+**/.env.test
+**/.env.aws
 
 # Python
 __pycache__/
@@ -43,3 +45,10 @@ k8s/secrets/homebite-secrets.yaml
 
 # Generated files
 nginx/index.html
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfvars

@@ -59,7 +59,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.service.context }}
-          dockerfile: ${{ matrix.service.context }}/Dockerfile
+          dockerfile: ${{ matrix.service.context }}/docker-compose.aws.yml
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/homebite-${{ matrix.service.name }}:latest
@@ -97,7 +97,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./nginx
-          dockerfile: ./nginx/Dockerfile
+          dockerfile: ./nginx/docker-compose.aws.yml
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/homebite-nginx:latest

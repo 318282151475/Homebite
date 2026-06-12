@@ -6,7 +6,7 @@ settings = get_settings()
 
 engine = create_async_engine(
     settings.DATABASE_URL,
-    pool_pre_ping=True,     # test connection before using from pool
+    pool_pre_ping=False,     # test connection before using from pool
     pool_size=10,           # max 10 persistent connections
     max_overflow=20,        # 20 extra connections allowed under load
     echo=settings.DEBUG,    # log SQL in dev only
