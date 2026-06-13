@@ -4,15 +4,17 @@
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=flat&logo=docker&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat&logo=kubernetes&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazonaws&logoColor=white)
+![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat&logo=terraform&logoColor=white)
 ![Kafka](https://img.shields.io/badge/Apache_Kafka-231F20?style=flat&logo=apache-kafka&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat&logo=mysql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7.2-DC382D?style=flat&logo=redis&logoColor=white)
 ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat&logo=prometheus&logoColor=white)
 ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat&logo=grafana&logoColor=white)
 
-A **production-grade microservices food delivery platform** connecting customers with home chefs. Built with event-driven architecture, Kubernetes deployment, and full observability stack.
+A **production-grade microservices food delivery platform** connecting customers with home chefs. Built with event-driven architecture, supporting three deployment models — local Docker Compose, Kubernetes, and AWS EC2 with Terraform.
 
-> Built as a portfolio project targeting Senior Backend/DevOps roles (20 LPA). Every architectural decision has a reason — documented below.
+> Built as a portfolio project targeting Senior Backend/Platform/DevOps roles (20 LPA). Every architectural decision has a reason — documented below.
 
 ---
 
@@ -23,11 +25,14 @@ A **production-grade microservices food delivery platform** connecting customers
 - [Tech Stack](#tech-stack)
 - [Services](#services)
 - [Event Flow](#event-flow)
+- [Deployment Models](#deployment-models)
+  - [Local — Docker Compose](#1-local--docker-compose)
+  - [Local AWS Structure Test](#2-local-aws-structure-test)
+  - [AWS EC2 — Terraform + Docker Compose](#3-aws-ec2--terraform--docker-compose)
+  - [Kubernetes](#4-kubernetes)
 - [Security Design](#security-design)
 - [Observability](#observability)
 - [Project Structure](#project-structure)
-- [Running Locally — Docker Compose](#running-locally--docker-compose)
-- [Running On Kubernetes](#running-on-kubernetes)
 - [API Reference](#api-reference)
 - [Key Engineering Decisions](#key-engineering-decisions)
 - [Problems Encountered and Solved](#problems-encountered-and-solved)
@@ -76,12 +81,12 @@ Order marked delivered → Chef becomes available again
     │  :8001    │   │    :8002     │   │     :8003        │
     └─────┬─────┘   └───────┬──────┘   └─────────┬────────┘
           │                 │                     │
-    ┌─────▼─────┐   ┌───────▼──────┐   ┌─────────▼────────┐
-    │delivery   │   │notification  │   │  logging_service  │
-    │_service   │   │  _service    │   │     :8006        │
-    │  :8004    │   │    :8005     │   └──────────────────┘
-    └───────────┘   └──────────────┘
-          │                 │
+    ┌─────▼─────┐                       ┌─────────▼────────┐
+    │delivery   │                       │  logging_service  │
+    │_service   │                       │     :8006        │
+    │  :8004    │                       └──────────────────┘
+    └───────────┘
+          │
           └────────┬────────┘
                    │
             ┌──────▼──────┐
@@ -108,9 +113,11 @@ Order marked delivered → Chef becomes available again
 | Message Broker | Apache Kafka | Async decoupled communication |
 | Cache / Auth | Redis 7.2 | JWT token blacklist |
 | Reverse Proxy | Nginx 1.25 | Auth, routing, rate limiting |
-| Containerization | Docker + Docker Compose | Local development |
-| Orchestration | Kubernetes | Production deployment |
-| Metrics | Prometheus + Grafana | Observability |
+| Containerization | Docker + Docker Compose | All deployment models |
+| Orchestration | Kubernetes | Production K8s deployment |
+| Cloud | AWS (EC2, RDS, S3, VPC, IAM) | Cloud deployment |
+| IaC | Terraform | AWS infrastructure provisioning |
+| Metrics | Prometheus + Grafana | Observability (local/K8s) |
 | ORM | SQLAlchemy (async) | Non-blocking DB queries |
 | Kafka Client | aiokafka | Async Kafka producer/consumer |
 
@@ -147,7 +154,7 @@ Order marked delivered → Chef becomes available again
 ### notification_service (port 8005)
 - Stateless Kafka consumer
 - Consumes all events
-- Email notification simulation
+- Email notification (future feature)
 
 ### logging_service (port 8006)
 - Audit trail for all system events
@@ -176,7 +183,6 @@ Flow:
 
 3. order_service consumes chef.assigned
    → updates order status to chef_assigned
-   → creates delivery record in delivery_service
 
 4. delivery_service consumes chef.assigned
    → creates delivery record
@@ -189,10 +195,303 @@ Flow:
 6. delivery_service.status = DELIVERED
    → publishes delivery.completed
    → order_service updates to delivered
-   → chef_service resets chef to available
 
 All events → logging_service (audit trail)
-All events → notification_service (user notifications)
+All events → notification_service (future: email notifications)
+```
+
+---
+
+## Deployment Models
+
+HomeBite supports three deployment models. Each is fully independent — no code changes needed to switch between them.
+
+---
+
+### 1. Local — Docker Compose
+
+Runs everything locally including MySQL, Kafka, Redis, Prometheus and Grafana.
+
+**Branch:** `main`
+
+#### Prerequisites
+- Docker Desktop
+
+#### Quick Start
+
+```bash
+# Clone repository
+git clone https://github.com/318282151475/Homebite.git
+cd Homebite
+
+# Switch to main branch
+git checkout main
+
+# Copy environment files
+cp services/user_service/.env.example services/user_service/.env
+cp services/chef_service/.env.example services/chef_service/.env
+cp services/order_service/.env.example services/order_service/.env
+cp services/delivery_service/.env.example services/delivery_service/.env
+cp services/notification_service/.env.example services/notification_service/.env
+cp services/logging_service/.env.example services/logging_service/.env
+
+# Start all services
+docker compose up -d
+
+# Watch logs
+docker compose logs -f
+```
+
+#### Access Points
+```
+Frontend      → http://localhost
+phpMyAdmin    → http://localhost:8080
+Prometheus    → http://localhost:9200
+Grafana       → http://localhost:3000  (admin/admin123)
+```
+
+#### Development Mode (Hot Reload)
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
+
+---
+
+### 2. Local AWS Structure Test
+
+Tests the exact AWS deployment structure locally before deploying to AWS.
+Replaces MySQL container with admin user (mirrors RDS behaviour).
+Removes Prometheus, Grafana, phpMyAdmin to mirror AWS compose file.
+
+**Branch:** `aws`
+
+#### Prerequisites
+- Docker Desktop
+- Stop any local MySQL service (frees port 3306)
+
+#### Quick Start
+
+```bash
+# Switch to aws branch
+git checkout aws
+
+# Create .env.test files for each service
+# (copy from .env.example and update DB_USER=admin, DB_PASSWORD=testpassword)
+
+# Start AWS structure test
+docker-compose -f docker-compose.test.yml up --build
+
+# Verify all containers healthy
+docker-compose -f docker-compose.test.yml ps -a
+```
+
+#### Expected Output
+```
+homebite_mysql_test       Up (healthy)
+homebite_redis            Up (healthy)
+homebite_zookeeper        Up (healthy)
+homebite_kafka            Up (healthy)
+homebite_kafka_init       Exited (0)    ← normal
+homebite_user_service     Up (healthy)
+homebite_chef_service     Up (healthy)
+homebite_order_service    Up (healthy)
+homebite_delivery_service Up (healthy)
+homebite_logging_service  Up (healthy)
+homebite_nginx            Up
+```
+
+#### Access Points
+```
+Frontend  → http://localhost
+```
+
+---
+
+### 3. AWS EC2 — Terraform + Docker Compose
+
+Deploys HomeBite on AWS using:
+- **EC2 t2.small** — runs all Docker containers
+- **RDS MySQL** — managed database (replaces MySQL container)
+- **VPC** — private network with public/private subnets
+- **Terraform** — provisions all infrastructure as code
+
+**Branch:** `aws`
+
+#### Prerequisites
+- AWS account with IAM user
+- AWS CLI configured (`aws configure`)
+- Terraform installed
+- SSH key pair generated
+
+#### Step 1 — Provision Infrastructure
+
+```bash
+cd terraform/
+
+# Initialise Terraform
+terraform init
+
+# Preview what will be created
+terraform plan
+
+# Create AWS infrastructure (~5-10 minutes)
+terraform apply
+```
+
+After apply completes, note the outputs:
+```
+ec2_public_ip = "13.235.x.x"
+rds_endpoint  = "homebite-db.xxxxx.ap-south-1.rds.amazonaws.com:3306"
+```
+
+#### Step 2 — SSH Into EC2
+
+```bash
+ssh -i ~/.ssh/homebite_key ubuntu@<EC2_IP>
+```
+
+#### Step 3 — Setup on EC2
+
+```bash
+# Clone repository
+git clone https://github.com/318282151475/Homebite.git
+cd Homebite
+git checkout aws
+
+# Run deploy script (creates all .env.aws files)
+bash deploy.sh
+# Enter RDS endpoint when prompted
+# Enter RDS password when prompted
+# Enter JWT secret key when prompted
+
+# Initialise databases on RDS
+mysql -h <RDS_ENDPOINT> -u admin -p < infra/mysql/init_user_db.sql
+mysql -h <RDS_ENDPOINT> -u admin -p < infra/mysql/init_chef_db.sql
+mysql -h <RDS_ENDPOINT> -u admin -p < infra/mysql/init_order_db.sql
+mysql -h <RDS_ENDPOINT> -u admin -p < infra/mysql/init_delivery_db.sql
+mysql -h <RDS_ENDPOINT> -u admin -p < infra/mysql/init_logging_db.sql
+mysql -h <RDS_ENDPOINT> -u admin -p < infra/mysql/init_grants.sql
+```
+
+#### Step 4 — Deploy HomeBite
+
+```bash
+docker-compose -f docker-compose.aws.yml up --build -d
+
+# Watch startup
+docker-compose -f docker-compose.aws.yml logs -f
+```
+
+#### Step 5 — Access
+
+```
+Frontend  → http://<EC2_IP>
+```
+
+#### Stop EC2 When Not Using (saves money)
+
+```bash
+aws ec2 stop-instances --instance-ids <instance-id>
+
+# Start again when needed
+aws ec2 start-instances --instance-ids <instance-id>
+```
+
+#### Destroy Everything When Done
+
+```bash
+# On your local machine
+cd terraform/
+terraform destroy
+```
+
+#### AWS Infrastructure Created
+
+```
+VPC (10.0.0.0/16)
+├── Public Subnet  → EC2 t2.small (Docker + all services)
+├── Private Subnet → RDS MySQL db.t3.micro
+├── Internet Gateway
+├── Route Tables
+├── Security Groups (EC2: 22/80, RDS: 3306 from EC2 only)
+└── Key Pair
+```
+
+#### What Changes Between Local and AWS
+
+| Component | Local | AWS |
+|-----------|-------|-----|
+| MySQL | Docker container | AWS RDS (managed) |
+| DB user | root | admin |
+| DB host | mysql (Docker DNS) | RDS endpoint (real DNS) |
+| Prometheus | Running | Removed (saves RAM) |
+| Grafana | Running | Removed (saves RAM) |
+| phpMyAdmin | Running | Removed (saves RAM) |
+| Nginx DNS resolver | 127.0.0.11 | 127.0.0.11 (same) |
+| App code | Unchanged | Unchanged |
+
+---
+
+### 4. Kubernetes
+
+Deploys HomeBite on Kubernetes (local Docker Desktop or AWS EKS).
+
+**Branch:** `main`
+
+#### Prerequisites
+- Docker Desktop with Kubernetes enabled
+- kubectl
+- Images pushed to Docker Hub
+
+#### Deploy
+
+```bash
+# Switch to main branch
+git checkout main
+
+# 1. Namespaces
+kubectl apply -f k8s/namespaces/
+
+# 2. Storage
+kubectl apply -f k8s/storage/
+
+# 3. Config and Secrets
+kubectl apply -f k8s/configmaps/
+kubectl apply -f k8s/secrets/
+
+# 4. Services (must be before pods — creates DNS entries)
+kubectl apply -f k8s/services/infrastructure-services.yaml
+
+# 5. Infrastructure
+kubectl apply -f k8s/infrastructure/mysql-deployment.yaml
+kubectl apply -f k8s/infrastructure/redis-deployment.yaml
+kubectl apply -f k8s/infrastructure/zookeeper-deployment.yaml
+kubectl apply -f k8s/infrastructure/kafka-deployment.yaml
+kubectl apply -f k8s/infrastructure/kafka-init-job.yaml
+
+# 6. App services
+kubectl apply -f k8s/deployments/
+
+# 7. Monitoring
+kubectl apply -f k8s/monitoring/
+
+# 8. Remaining services + ingress
+kubectl apply -f k8s/services/
+kubectl apply -f k8s/ingress/
+```
+
+#### Access via Port-Forward
+
+```bash
+kubectl port-forward service/nginx-service 8080:80 -n homebite
+kubectl port-forward service/prometheus 9090:9090 -n monitoring
+kubectl port-forward service/grafana 3000:3000 -n monitoring
+```
+
+```
+Frontend      → http://localhost:8080
+Prometheus    → http://localhost:9090
+Grafana       → http://localhost:3000
 ```
 
 ---
@@ -237,59 +536,43 @@ zone=api_limit   → 10 requests/second per IP
 zone=auth_limit  → 5 requests/minute per IP (login/register)
 ```
 
-### Timing Attack Prevention
-```python
-# Always verify password even if user not found
-# Prevents attacker from detecting valid emails
-# by measuring response time difference
-if not user or not verify_password(data.password, user.hashed_password):
-    login_attempts_total.labels(status="failed").inc()
-    raise InvalidCredentialsException()
-```
-
 ---
 
 ## Observability
+
+Available on **local** and **Kubernetes** deployments.
 
 ### Metrics (Prometheus + Grafana)
 
 **Business Metrics:**
 ```
-orders_placed_total           → total orders placed
-orders_in_progress            → live gauge of active orders
-orders_cancelled_total        → cancellation rate
-chefs_assigned_total          → successful chef assignments
-chef_assignment_failed_total  → failed assignments
-deliveries_completed_total    → completed deliveries
-delivery_duration_minutes     → histogram of delivery times
+orders_placed_total
+orders_in_progress
+chefs_assigned_total
+deliveries_completed_total
+delivery_duration_minutes
 ```
 
 **Auth Metrics:**
 ```
-users_registered_total        → by role (customer/chef)
-login_attempts_total          → success vs failed
-token_blacklisted_total       → logout rate
+users_registered_total
+login_attempts_total
+token_blacklisted_total
 ```
 
 **Kafka Metrics:**
 ```
-kafka_events_published_total  → by topic
-kafka_events_consumed_total   → by service and event type
-```
-
-**Infrastructure Metrics (automatic):**
-```
-http_requests_total           → by service, endpoint, status
-http_request_duration_seconds → P50, P95, P99 latency
+kafka_events_published_total
+kafka_events_consumed_total
 ```
 
 ### Grafana Dashboard
 Pre-built dashboard with 5 sections:
-- Business Metrics (stat cards)
+- Business Metrics
 - HTTP Traffic (requests/sec, error rate, P99 latency)
-- Auth Metrics (login attempts, registrations)
-- Kafka Events (published vs consumed)
-- Service Health (UP/DOWN per service)
+- Auth Metrics
+- Kafka Events
+- Service Health
 
 ---
 
@@ -302,13 +585,10 @@ HomeBite/
 │   │   ├── app/
 │   │   │   ├── api/v1/routes.py
 │   │   │   ├── core/security.py
-│   │   │   ├── core/exceptions.py
 │   │   │   ├── crud/user.py
 │   │   │   ├── kafka/consumer.py
 │   │   │   ├── kafka/producer.py
-│   │   │   ├── metrics.py
 │   │   │   ├── models/user.py
-│   │   │   ├── schemas/user.py
 │   │   │   ├── config.py
 │   │   │   ├── database.py
 │   │   │   └── main.py
@@ -323,149 +603,44 @@ HomeBite/
 │
 ├── nginx/
 │   ├── conf.d/
-│   │   ├── homebite.conf    ← routing + auth_request + rate limiting
+│   │   ├── homebite.conf    ← routing + auth + rate limiting
 │   │   └── proxy_params.conf
-│   ├── errors/              ← custom JSON error responses
 │   ├── nginx.conf
-│   ├── index.html           ← HomeBite frontend (baked into image)
 │   └── Dockerfile
 │
 ├── frontend/
 │   └── index.html           ← Single page app (4 role dashboards)
 │
-├── k8s/
-│   ├── namespaces/          ← homebite + monitoring namespaces
-│   ├── storage/             ← PersistentVolumeClaims
-│   ├── configmaps/          ← app config + kafka scripts + prometheus
-│   ├── secrets/             ← DB passwords + JWT keys (gitignored)
-│   ├── infrastructure/      ← MySQL, Redis, Kafka, Zookeeper
-│   ├── deployments/         ← 6 app services + nginx
-│   ├── monitoring/          ← Prometheus + Grafana
-│   ├── services/            ← ClusterIP + NodePort services
-│   └── ingress/             ← Nginx ingress rules
+├── k8s/                     ← Kubernetes manifests
+│   ├── namespaces/
+│   ├── infrastructure/
+│   ├── deployments/
+│   ├── monitoring/
+│   ├── services/
+│   └── ingress/
+│
+├── terraform/               ← AWS infrastructure as code
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── vpc.tf
+│   ├── security.tf
+│   ├── ec2.tf
+│   ├── rds.tf
+│   └── outputs.tf
 │
 ├── infra/
-│   ├── mysql/               ← init.sql (creates all databases)
+│   ├── mysql/               ← DB init SQL + grants
 │   ├── kafka/               ← create_topics.sh
-│   ├── prometheus/          ← prometheus.yml
+│   ├── prometheus/
 │   ├── grafana/
-│   │   ├── datasources/     ← auto-provision Prometheus
-│   │   └── dashboards/      ← homebite.json dashboard
-│   └── redis/               ← redis.conf
+│   └── redis/
 │
 ├── docker-compose.yml       ← local development
-├── docker-compose.dev.yml   ← hot reload for development
+├── docker-compose.dev.yml   ← hot reload
+├── docker-compose.test.yml  ← local AWS structure test
+├── docker-compose.aws.yml   ← AWS EC2 deployment
+├── deploy.sh                ← EC2 setup script
 └── README.md
-```
-
----
-
-## Running Locally — Docker Compose
-
-### Prerequisites
-- Docker Desktop
-- Python 3.12 (for local development)
-
-### Quick Start
-
-```bash
-# Clone repository
-git clone https://github.com/YOUR_USERNAME/homebite.git
-cd homebite
-
-# Copy environment files
-cp services/user_service/.env.example services/user_service/.env
-cp services/chef_service/.env.example services/chef_service/.env
-cp services/order_service/.env.example services/order_service/.env
-cp services/delivery_service/.env.example services/delivery_service/.env
-cp services/notification_service/.env.example services/notification_service/.env
-cp services/logging_service/.env.example services/logging_service/.env
-
-# Start all services
-docker compose up -d
-
-# Watch logs
-docker compose logs -f
-```
-
-### Access Points
-```
-Frontend      → http://localhost
-phpMyAdmin    → http://localhost:8080
-Prometheus    → http://localhost:9200
-Grafana       → http://localhost:3000  (admin/admin123)
-```
-
-### Development Mode (Hot Reload)
-```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-```
-
----
-
-## Running On Kubernetes
-
-### Prerequisites
-- Docker Desktop with Kubernetes enabled
-- kubectl
-- Images pushed to Docker Hub
-
-### Deploy
-
-```bash
-# 1. Namespaces
-kubectl apply -f k8s/namespaces/
-
-# 2. Storage
-kubectl apply -f k8s/storage/
-
-# 3. Config and Secrets
-kubectl apply -f k8s/configmaps/
-kubectl apply -f k8s/secrets/
-
-# 4. Services (must be before pods — creates DNS entries)
-kubectl apply -f k8s/services/infrastructure-services.yaml
-
-# 5. Infrastructure
-kubectl apply -f k8s/infrastructure/mysql-deployment.yaml
-kubectl apply -f k8s/infrastructure/redis-deployment.yaml
-kubectl apply -f k8s/infrastructure/zookeeper-deployment.yaml
-kubectl apply -f k8s/infrastructure/phpmyadmin-deployment.yaml
-kubectl apply -f k8s/infrastructure/kafka-deployment.yaml
-
-# 6. Wait for Kafka, then create topics
-kubectl apply -f k8s/infrastructure/kafka-init-job.yaml
-
-# 7. App services
-kubectl apply -f k8s/deployments/
-
-# 8. Monitoring
-kubectl apply -f k8s/monitoring/
-
-# 9. Remaining services + ingress
-kubectl apply -f k8s/services/
-kubectl apply -f k8s/ingress/
-```
-
-### Access via Port-Forward
-```bash
-kubectl port-forward service/nginx-service 8080:80 -n homebite
-kubectl port-forward service/phpmyadmin 8083:80 -n homebite
-kubectl port-forward service/prometheus 9090:9090 -n monitoring
-kubectl port-forward service/grafana 3000:3000 -n monitoring
-```
-
-```
-Frontend      → http://localhost:8080
-phpMyAdmin    → http://localhost:8083
-Prometheus    → http://localhost:9090
-Grafana       → http://localhost:3000
-```
-
-### Verify All Pods Running
-```bash
-kubectl get pods -n homebite
-kubectl get pods -n monitoring
 ```
 
 ---
@@ -474,37 +649,37 @@ kubectl get pods -n monitoring
 
 ### User Service
 ```
-POST /api/v1/users/register    → register new user
-POST /api/v1/users/login       → login, returns JWT tokens
-POST /api/v1/users/logout      → blacklist token
-POST /api/v1/users/refresh     → refresh access token
-GET  /api/v1/users/me          → get profile
-POST /admin/create-user        → admin creates delivery person
+POST /api/v1/users/register         → register new user
+POST /api/v1/users/login            → login, returns JWT tokens
+POST /api/v1/users/logout           → blacklist token
+POST /api/v1/users/refresh          → refresh access token
+GET  /api/v1/users/me               → get profile
+POST /api/v1/users/admin/create-user→ admin creates delivery person
 ```
 
 ### Chef Service
 ```
-POST /api/v1/chefs/            → create chef profile
-GET  /api/v1/chefs/available/{city}  → browse available chefs
-GET  /api/v1/chefs/user/{user_id}    → get chef by user id
-PATCH /api/v1/chefs/{id}/status      → update availability
+POST  /api/v1/chefs/                    → create chef profile
+GET   /api/v1/chefs/available/{city}    → browse available chefs
+GET   /api/v1/chefs/user/{user_id}      → get chef by user id
+PATCH /api/v1/chefs/{id}/status         → update availability
 ```
 
 ### Order Service
 ```
-POST /api/v1/orders/                 → place order
-GET  /api/v1/orders/user/{user_id}   → customer order history
-GET  /api/v1/orders/chef/{chef_id}   → chef active orders
-PATCH /api/v1/orders/{id}/status     → chef updates status
-POST /api/v1/orders/{id}/cancel      → cancel order
+POST  /api/v1/orders/                   → place order
+GET   /api/v1/orders/user/{user_id}     → customer order history
+GET   /api/v1/orders/chef/{chef_id}     → chef active orders
+PATCH /api/v1/orders/{id}/status        → chef updates status
+POST  /api/v1/orders/{id}/cancel        → cancel order
 ```
 
 ### Delivery Service
 ```
-GET  /api/v1/deliveries/available/{city}         → available deliveries
-POST /api/v1/deliveries/{id}/accept              → accept delivery
-PATCH /api/v1/deliveries/{id}/status             → update status
-GET  /api/v1/deliveries/person/{person_id}       → my deliveries
+GET   /api/v1/deliveries/available/{city}    → available deliveries
+POST  /api/v1/deliveries/{id}/accept         → accept delivery
+PATCH /api/v1/deliveries/{id}/status         → update status
+GET   /api/v1/deliveries/person/{person_id}  → my deliveries
 ```
 
 ---
@@ -531,27 +706,29 @@ Kafka:
 ```
 
 ### 3. Why Per-Service Databases
-Database-per-service pattern:
-- user_service owns user_db
-- chef_service owns chef_db
-- order_service owns order_db
-
-No shared database = no tight coupling at data layer. Services cannot directly read each other's tables.
+Database-per-service pattern — no shared database = no tight coupling at data layer. Services cannot directly read each other's tables.
 
 ### 4. Why Redis For JWT Blacklist
-JWT is stateless by design. To support logout we need stateful tracking. Redis with TTL matching token expiry gives us:
-- O(1) blacklist lookup
-- Automatic expiry (no cleanup needed)
-- Fast enough for every request
+JWT is stateless by design. Redis with TTL matching token expiry gives O(1) blacklist lookup with automatic expiry.
 
 ### 5. Why Nginx auth_request
-Centralizes authentication without duplicating code in every service. Single JWT validation point — if auth logic changes, update one place.
+Centralizes authentication without duplicating code in every service.
 
-### 6. Kafka acks=all For Orders
-```python
-producer = AIOKafkaProducer(acks="all")
+### 6. Why EC2 + Docker Compose Over EKS for AWS Deployment
 ```
-Order data is critical. `acks=all` waits for all Kafka replicas to confirm before returning. Slower but zero message loss. Acceptable tradeoff for financial transactions.
+EKS: $0.10/hour control plane = ~₹6,000/month minimum
+EC2 t2.small: ~₹600/month, stop when not using
+
+For portfolio demo: EC2 + Docker Compose = same microservices
+architecture at fraction of the cost.
+K8s manifests still available for production path.
+```
+
+### 7. Why Terraform for AWS Infrastructure
+Infrastructure as code — entire AWS setup reproducible with one command. Version controlled, documented, destroyable cleanly.
+
+### 8. Why pool_pre_ping=False with aiomysql
+Known incompatibility between SQLAlchemy 2.0.x pool_pre_ping and aiomysql non-root users. aiomysql manages connection health internally — disabling SQLAlchemy ping is the correct approach.
 
 ---
 
@@ -559,38 +736,44 @@ Order data is critical. `acks=all` waits for all Kafka replicas to confirm befor
 
 ### 1. bcrypt Version Conflict
 **Problem:** `bcrypt==5.x` incompatible with `passlib==1.7.4`
-**Fix:** Pin `bcrypt==4.0.1` in requirements.txt
-**Lesson:** Always pin dependency versions in production
+**Fix:** Pin `bcrypt==4.0.1`
 
 ### 2. Kafka Healthcheck Failure in Docker
-**Problem:** `ruok` command disabled in Zookeeper 3.8+ by default
+**Problem:** `ruok` command disabled in Zookeeper 3.8+
 **Fix:** Use `cub zk-ready` instead of `echo ruok | nc`
-**Lesson:** Official tools beat manual TCP checks
 
 ### 3. Windows Port Conflicts
-**Problem:** Windows reserves ports 9023-9122, blocking Kafka and Prometheus
+**Problem:** Windows reserves ports blocking Kafka and Prometheus
 **Fix:** Move Prometheus to 9200, remove Kafka external port
-**Lesson:** Know your OS port reservation ranges
 
-### 4. Nginx Dynamic DNS in Kubernetes
-**Problem:** Nginx uses `resolver 127.0.0.11` (Docker DNS) — does not exist in Kubernetes
-**Fix:** Change to CoreDNS IP `10.96.0.10`
+### 4. Nginx DNS Difference — Docker vs Kubernetes
+**Problem:** `resolver 127.0.0.11` (Docker DNS) doesn't exist in Kubernetes
+**Fix:** Separate nginx configs per deployment — `10.96.0.10` for K8s, `127.0.0.11` for Docker
 **Lesson:** Docker Compose DNS ≠ Kubernetes DNS
 
 ### 5. Kafka Service Name Conflict in Kubernetes
-**Problem:** Kubernetes auto-injects `KAFKA_PORT` env var for any Service named "kafka"
-**Fix:** Rename Service to `kafka-broker` and skip Confluent preflight checks
-**Lesson:** Kubernetes service discovery injects env vars — conflicts with apps that use same prefix
+**Problem:** Kubernetes auto-injects `KAFKA_PORT` env var for Service named "kafka"
+**Fix:** Rename Service to `kafka-broker`
 
-### 6. Nginx index.html Not In Image
-**Problem:** Docker Compose mounts `index.html` as volume at runtime. Kubernetes has no volume mount → default nginx page shown
-**Fix:** Copy `index.html` into `nginx/` folder and add `COPY index.html` to Dockerfile
-**Lesson:** Everything needed at runtime must be baked into image for Kubernetes
+### 6. MySQL admin User Access Denied on Non-Root
+**Problem:** `MYSQL_USER=admin` created but not granted access to init databases
+**Fix:** Added `init_grants.sql` — explicit GRANT ALL on each database to admin user
+**Lesson:** MySQL auto-created users need explicit grants on non-default databases
 
-### 7. MySQL User Creation Error
-**Problem:** `MYSQL_USER=root` not allowed — root is configured via `MYSQL_ROOT_PASSWORD`
-**Fix:** Remove `MYSQL_USER` and `MYSQL_PASSWORD`, keep only `MYSQL_ROOT_PASSWORD`
-**Lesson:** Read official image documentation for env variable conventions
+### 7. pool_pre_ping Bug with aiomysql Non-Root User
+**Problem:** SQLAlchemy `pool_pre_ping=True` calls `connection.ping()` without required argument when using aiomysql with non-root user
+**Fix:** Set `pool_pre_ping=False` in all service `database.py` files
+**Lesson:** Test with same user type (admin not root) locally before AWS deployment
+
+### 8. Windows Port 3307 Forbidden
+**Problem:** Docker couldn't bind port 3307 on Windows — reserved by Hyper-V
+**Fix:** Removed port mapping from mysql_test — Docker internal networking doesn't need it
+**Lesson:** Internal Docker services don't need host port mappings
+
+### 9. Nginx Service URLs (Kubernetes → Docker Compose)
+**Problem:** Nginx config used Kubernetes FQDN format for service URLs
+**Fix:** Updated to Docker Compose service name format for aws branch
+**Lesson:** Always validate nginx upstream URLs match your DNS environment
 
 ---
 
@@ -599,12 +782,9 @@ Order data is critical. `acks=all` waits for all Kafka replicas to confirm befor
 ```
 ✓ Phase 1-6  → 6 Microservices
 ✓ Phase 7    → Nginx + Security
-✓ Phase 8    → Docker Compose
-✓ Phase 9    → Observability
+✓ Phase 8    → Docker Compose (local)
+✓ Phase 9    → Observability (Prometheus + Grafana)
 ✓ Phase 10   → Kubernetes Local
-⏳ Phase 11   → CI/CD (GitHub Actions)
-⏳ Phase 12   → AWS Deployment (EKS + RDS + MSK)
+✓ Phase 11   → CI/CD (GitHub Actions)
+✓ Phase 12   → AWS Deployment (EC2 + RDS + Terraform)
 ```
-
----
-
