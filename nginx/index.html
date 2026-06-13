@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HomeBite — Homemade, Delivered</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --saffron:#E8821A; --saffron-light:#F5A94E; --saffron-dark:#C46A0A;
+      --charcoal:#1A1A1A; --charcoal-mid:#2C2C2C; --charcoal-soft:#3D3D3D;
+      --cream:#FDF6ED; --text-muted:#888;
+      --success:#4CAF82; --error:#E05252; --warning:#F0B429; --info:#5B9BD5;
+      --radius:12px; --radius-lg:20px; --shadow:0 4px 24px rgba(0,0,0,0.35);
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'DM Sans',sans-serif;background:var(--charcoal);color:var(--cream);min-height:100vh;overflow-x:hidden}
+    ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-track{background:var(--charcoal-mid)} ::-webkit-scrollbar-thumb{background:var(--saffron);border-radius:3px}
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 48px;background:rgba(26,26,26,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(232,130,26,0.15)}
+    .nav-logo{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--saffron)} .nav-logo span{color:var(--cream);font-style:italic}
+    .nav-right{display:flex;align-items:center;gap:12px}
+    .nav-role-badge{font-size:0.72rem;font-weight:500;padding:4px 10px;border-radius:100px;text-transform:uppercase;letter-spacing:1px}
+    .badge-customer{background:rgba(91,155,213,0.15);color:var(--info);border:1px solid rgba(91,155,213,0.3)}
+    .badge-chef{background:rgba(232,130,26,0.15);color:var(--saffron-light);border:1px solid rgba(232,130,26,0.3)}
+    .badge-delivery_person{background:rgba(76,175,130,0.15);color:var(--success);border:1px solid rgba(76,175,130,0.3)}
+    .badge-admin{background:rgba(224,82,82,0.15);color:var(--error);border:1px solid rgba(224,82,82,0.3)}
+    .page{display:none;min-height:100vh;padding-top:80px} .page.active{display:block}
+    #page-home{background:radial-gradient(ellipse 80% 60% at 60% 40%,rgba(232,130,26,0.1) 0%,transparent 70%),var(--charcoal)}
+    .hero{min-height:calc(100vh - 80px);display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:60px 48px;gap:48px;max-width:1200px;margin:0 auto}
+    .hero-text{animation:fadeUp 0.7s ease both}
+    .hero-tag{display:inline-block;background:rgba(232,130,26,0.12);border:1px solid rgba(232,130,26,0.25);color:var(--saffron-light);font-size:0.72rem;font-weight:500;letter-spacing:2px;text-transform:uppercase;padding:6px 14px;border-radius:100px;margin-bottom:24px}
+    .hero h1{font-family:'Playfair Display',serif;font-size:clamp(2.5rem,5vw,4rem);line-height:1.1;margin-bottom:20px}
+    .hero h1 em{color:var(--saffron);font-style:italic}
+    .hero p{font-size:1rem;color:var(--text-muted);line-height:1.7;max-width:420px;margin-bottom:36px;font-weight:300}
+    .hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+    .hero-visual{display:flex;flex-direction:column;gap:16px;animation:fadeUp 0.7s 0.2s ease both}
+    .stat-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .stat-card{background:var(--charcoal-mid);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);padding:20px}
+    .stat-card .num{font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--saffron);font-weight:700} .stat-card .label{font-size:0.78rem;color:var(--text-muted);margin-top:4px}
+    .flow-card{background:var(--charcoal-mid);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);padding:20px 24px}
+    .flow-title{font-size:0.72rem;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+    .flow-steps{display:flex;align-items:center} .flow-step{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1}
+    .flow-dot{width:34px;height:34px;border-radius:50%;background:rgba(232,130,26,0.12);border:2px solid rgba(232,130,26,0.25);display:flex;align-items:center;justify-content:center;font-size:0.9rem}
+    .flow-step span{font-size:0.68rem;color:var(--text-muted);text-align:center} .flow-arrow{flex:0 0 16px;text-align:center;color:rgba(232,130,26,0.35);font-size:0.9rem;margin-bottom:20px}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:500;cursor:pointer;border:none;transition:all 0.2s;text-decoration:none}
+    .btn-primary{background:var(--saffron);color:white} .btn-primary:hover{background:var(--saffron-dark);transform:translateY(-1px);box-shadow:0 6px 20px rgba(232,130,26,0.3)}
+    .btn-outline{background:transparent;color:var(--cream);border:1px solid rgba(255,255,255,0.15)} .btn-outline:hover{border-color:var(--saffron);color:var(--saffron)}
+    .btn-ghost{background:transparent;color:var(--text-muted);padding:8px 14px} .btn-ghost:hover{color:var(--cream)}
+    .btn-success{background:rgba(76,175,130,0.15);color:var(--success);border:1px solid rgba(76,175,130,0.25)} .btn-success:hover{background:rgba(76,175,130,0.25)}
+    .btn-warning{background:rgba(240,180,41,0.12);color:var(--warning);border:1px solid rgba(240,180,41,0.2)} .btn-warning:hover{background:rgba(240,180,41,0.22)}
+    .btn-danger{background:rgba(224,82,82,0.12);color:var(--error);border:1px solid rgba(224,82,82,0.2)} .btn-danger:hover{background:rgba(224,82,82,0.22)}
+    .btn-info{background:rgba(91,155,213,0.12);color:var(--info);border:1px solid rgba(91,155,213,0.2)} .btn-info:hover{background:rgba(91,155,213,0.22)}
+    .btn-sm{padding:7px 14px;font-size:0.8rem} .btn-full{width:100%;justify-content:center} .btn:disabled{opacity:0.45;cursor:not-allowed;transform:none !important}
+    .auth-wrap{min-height:calc(100vh - 80px);display:flex;align-items:center;justify-content:center;padding:40px 24px}
+    .auth-card{background:var(--charcoal-mid);border:1px solid rgba(255,255,255,0.07);border-radius:var(--radius-lg);padding:44px 40px;width:100%;max-width:460px;animation:fadeUp 0.5s ease both}
+    .auth-header{margin-bottom:28px} .auth-header h2{font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--cream);margin-bottom:8px} .auth-header p{color:var(--text-muted);font-size:0.88rem} .auth-header p a{color:var(--saffron);cursor:pointer}
+    .form-group{margin-bottom:16px}
+    label{display:block;font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;font-weight:500}
+    input,select,textarea{width:100%;background:var(--charcoal);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius);padding:11px 14px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:0.88rem;transition:border-color 0.2s;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:var(--saffron);box-shadow:0 0 0 3px rgba(232,130,26,0.08)} input::placeholder{color:var(--charcoal-soft)} select option{background:var(--charcoal-mid)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .alert{padding:11px 14px;border-radius:var(--radius);font-size:0.83rem;margin-bottom:16px;display:none} .alert.visible{display:block}
+    .alert-error{background:rgba(224,82,82,0.1);border:1px solid rgba(224,82,82,0.22);color:#F08080}
+    .alert-success{background:rgba(76,175,130,0.1);border:1px solid rgba(76,175,130,0.22);color:#7DD4A8}
+    .dashboard-wrap{max-width:1200px;margin:0 auto;padding:32px 48px 60px}
+    .dashboard-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid rgba(255,255,255,0.06)}
+    .dashboard-header h2{font-family:'Playfair Display',serif;font-size:1.7rem;color:var(--cream)} .dashboard-header p{color:var(--text-muted);font-size:0.88rem;margin-top:4px}
+    .tabs{display:flex;gap:4px;background:var(--charcoal-mid);border-radius:var(--radius);padding:4px;margin-bottom:28px;width:fit-content}
+    .tab{padding:8px 18px;border-radius:8px;font-size:0.83rem;font-weight:500;cursor:pointer;color:var(--text-muted);transition:all 0.2s;border:none;background:none;font-family:'DM Sans',sans-serif} .tab.active{background:var(--saffron);color:white} .tab:hover:not(.active){color:var(--cream)}
+    .tab-content{display:none} .tab-content.active{display:block;animation:fadeUp 0.3s ease}
+    .card{background:var(--charcoal-mid);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius-lg);padding:24px;transition:border-color 0.2s;margin-bottom:14px} .card:hover{border-color:rgba(255,255,255,0.1)}
+    .card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+    .card-title{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--cream)} .card-sub{font-size:0.78rem;color:var(--text-muted);margin-top:3px}
+    .card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05)}
+    .card-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .badge{font-size:0.72rem;font-weight:500;padding:4px 10px;border-radius:100px;white-space:nowrap}
+    .badge-pending{background:rgba(240,180,41,0.12);color:var(--warning);border:1px solid rgba(240,180,41,0.2)}
+    .badge-chef_assigned{background:rgba(91,155,213,0.12);color:var(--info);border:1px solid rgba(91,155,213,0.2)}
+    .badge-preparing{background:rgba(232,130,26,0.12);color:var(--saffron-light);border:1px solid rgba(232,130,26,0.2)}
+    .badge-ready_for_pickup{background:rgba(76,175,130,0.12);color:var(--success);border:1px solid rgba(76,175,130,0.2)}
+    .badge-out_for_delivery{background:rgba(91,155,213,0.12);color:var(--info);border:1px solid rgba(91,155,213,0.2)}
+    .badge-delivered{background:rgba(76,175,130,0.12);color:var(--success);border:1px solid rgba(76,175,130,0.2)}
+    .badge-cancelled,.badge-failed{background:rgba(224,82,82,0.12);color:var(--error);border:1px solid rgba(224,82,82,0.2)}
+    .badge-available{background:rgba(76,175,130,0.12);color:var(--success);border:1px solid rgba(76,175,130,0.2)}
+    .badge-busy{background:rgba(240,180,41,0.12);color:var(--warning);border:1px solid rgba(240,180,41,0.2)}
+    .badge-offline{background:rgba(255,255,255,0.06);color:var(--text-muted);border:1px solid rgba(255,255,255,0.1)}
+    .pipeline{display:flex;align-items:center;margin:14px 0;overflow-x:auto;padding-bottom:4px}
+    .pipeline-step{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;min-width:70px}
+    .pipeline-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;border:2px solid rgba(255,255,255,0.1);background:var(--charcoal);color:var(--text-muted);transition:all 0.3s}
+    .pipeline-dot.done{background:var(--success);border-color:var(--success);color:white}
+    .pipeline-dot.active{background:var(--saffron);border-color:var(--saffron);color:white;box-shadow:0 0 10px rgba(232,130,26,0.45);animation:pulse 1.5s infinite}
+    .pipeline-label{font-size:0.65rem;color:var(--text-muted);text-align:center;white-space:nowrap}
+    .pipeline-line{flex:1;height:2px;background:rgba(255,255,255,0.07);margin-bottom:20px;transition:background 0.3s} .pipeline-line.done{background:var(--success)}
+    .chefs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+    .chef-card{background:var(--charcoal-mid);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius-lg);padding:22px;transition:all 0.25s;cursor:pointer;position:relative;overflow:hidden}
+    .chef-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--saffron),var(--saffron-light));opacity:0;transition:opacity 0.25s}
+    .chef-card:hover{border-color:rgba(232,130,26,0.25);transform:translateY(-2px)} .chef-card:hover::before,.chef-card.selected::before{opacity:1} .chef-card.selected{border-color:var(--saffron);background:rgba(232,130,26,0.05)}
+    .chef-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--saffron),var(--saffron-dark));display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:12px}
+    .chef-name{font-family:'Playfair Display',serif;font-size:1rem;color:var(--cream);margin-bottom:3px} .chef-cuisine{font-size:0.75rem;color:var(--saffron-light);margin-bottom:10px;text-transform:capitalize}
+    .chef-meta{display:flex;gap:14px;margin-bottom:12px} .chef-meta-item{font-size:0.75rem;color:var(--text-muted)}
+    .order-form{background:var(--charcoal-mid);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius-lg);padding:28px;max-width:620px}
+    .order-form h3{font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:22px}
+    .item-row{display:grid;grid-template-columns:1fr 70px 90px 32px;gap:8px;align-items:end;margin-bottom:10px} .item-row .form-group{margin:0}
+    .order-total{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:1px solid rgba(255,255,255,0.06);margin-bottom:18px}
+    .order-total .lbl{color:var(--text-muted);font-size:0.88rem} .order-total .amount{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--saffron)}
+    .orders-list{display:flex;flex-direction:column;gap:14px} .order-amount{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--saffron)}
+    .empty-state{text-align:center;padding:60px 20px;color:var(--text-muted)} .empty-state .icon{font-size:2.8rem;margin-bottom:14px;opacity:0.35}
+    .empty-state h3{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--cream);margin-bottom:8px}
+    .loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px;color:var(--text-muted);font-size:0.87rem}
+    .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.1);border-top-color:var(--saffron);border-radius:50%;animation:spin 0.7s linear infinite}
+    .toast-container{position:fixed;bottom:28px;right:28px;z-index:1000;display:flex;flex-direction:column;gap:8px}
+    .toast{background:var(--charcoal-mid);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:12px 16px;font-size:0.83rem;min-width:240px;max-width:340px;display:flex;align-items:center;gap:10px;animation:slideIn 0.3s ease;box-shadow:var(--shadow)}
+    .toast.success{border-left:3px solid var(--success)} .toast.error{border-left:3px solid var(--error)} .toast.info{border-left:3px solid var(--saffron)} .toast.warning{border-left:3px solid var(--warning)}
+    .auto-refresh{display:flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--text-muted)} .refresh-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
+    .divider{display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:0.78rem;margin:18px 0} .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.07)}
+    .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+    .section-header h3{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--cream)} .section-header p{font-size:0.82rem;color:var(--text-muted);margin-top:3px}
+    .filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:20px;flex-wrap:wrap} .filter-bar input,.filter-bar select{width:auto;flex:1;min-width:140px}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+    @keyframes slideIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+    @media(max-width:768px){nav{padding:14px 18px}.hero{grid-template-columns:1fr;padding:36px 20px}.hero-visual{display:none}.dashboard-wrap{padding:20px 18px 48px}.auth-card{padding:28px 22px}}
+  </style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo">Home<span>Bite</span></div>
+  <div class="nav-right" id="nav-right">
+    <div id="nav-auth-btns" style="display:flex;gap:10px;">
+      <button class="btn btn-outline btn-sm" onclick="showPage('login')">Sign in</button>
+      <button class="btn btn-primary btn-sm" onclick="showPage('register')">Get started</button>
+    </div>
+    <div id="nav-user-info" style="display:none;align-items:center;gap:10px;">
+      <span id="nav-role-badge" class="nav-role-badge"></span>
+      <span style="font-size:0.85rem;color:var(--text-muted)">Welcome, <strong id="nav-username" style="color:var(--cream)"></strong></span>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+</nav>
+<div class="toast-container" id="toast-container"></div>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-text">
+      <div class="hero-tag">🍱 Home Chefs. Real Food.</div>
+      <h1>Food cooked with<br/><em>love</em>, not<br/>assembly lines.</h1>
+      <p>HomeBite connects you with talented home chefs in your city. Healthier meals, authentic flavors, delivered fresh.</p>
+      <div class="hero-cta">
+        <button class="btn btn-primary" onclick="showPage('register')">Order Now →</button>
+        <button class="btn btn-outline" onclick="showPage('login')">Sign In</button>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="stat-cards">
+        <div class="stat-card"><div class="num">2.4k+</div><div class="label">Home Chefs</div></div>
+        <div class="stat-card"><div class="num">18k+</div><div class="label">Orders Delivered</div></div>
+        <div class="stat-card"><div class="num">4.8★</div><div class="label">Avg Rating</div></div>
+        <div class="stat-card"><div class="num">35min</div><div class="label">Avg Delivery</div></div>
+      </div>
+      <div class="flow-card">
+        <div class="flow-title">How it works</div>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="flow-dot">🛒</div><span>Browse</span></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-dot">📝</div><span>Order</span></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-dot">👨‍🍳</div><span>Cook</span></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-dot">🛵</div><span>Deliver</span></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-dot">😋</div><span>Enjoy</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div class="page" id="page-register">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-header"><h2>Create account</h2><p>Already have an account? <a onclick="showPage('login')">Sign in</a></p></div>
+      <div class="alert alert-error" id="register-error"></div>
+      <div class="alert alert-success" id="register-success"></div>
+      <div class="form-group"><label>Full Name</label><input type="text" id="reg-name" placeholder="Priya Sharma" /></div>
+      <div class="form-group"><label>Email Address</label><input type="email" id="reg-email" placeholder="priya@example.com" /></div>
+      <div class="form-group"><label>Phone (optional)</label><input type="tel" id="reg-phone" placeholder="9876543210" /></div>
+      <div class="form-group"><label>Password</label><input type="password" id="reg-password" placeholder="Min 8 chars, uppercase, number, special" /></div>
+      <div class="form-group">
+        <label>Register as</label>
+        <select id="reg-role">
+          <option value="customer">Customer — I want to order food</option>
+          <option value="chef">Chef — I want to cook and sell</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-full" id="reg-btn" onclick="registerUser()">Create Account</button>
+      <div class="divider">or</div>
+      <button class="btn btn-outline btn-full" onclick="showPage('login')">Sign In Instead</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div class="page" id="page-login">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-header"><h2>Welcome back</h2><p>New here? <a onclick="showPage('register')">Create an account</a></p></div>
+      <div class="alert alert-error" id="login-error"></div>
+      <div class="form-group"><label>Email Address</label><input type="email" id="login-email" placeholder="you@example.com" /></div>
+      <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="Your password" /></div>
+      <button class="btn btn-primary btn-full" id="login-btn" onclick="loginUser()">Sign In</button>
+      <div class="divider">or</div>
+      <button class="btn btn-outline btn-full" onclick="showPage('register')">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHEF PROFILE SETUP -->
+<div class="page" id="page-chef-setup">
+  <div class="auth-wrap">
+    <div class="auth-card" style="max-width:520px;">
+      <div class="auth-header"><h2>Complete your profile</h2><p>Set up your chef profile to start receiving orders</p></div>
+      <div class="alert alert-error" id="setup-error"></div>
+      <div class="form-group"><label>Bio</label><input type="text" id="setup-bio" placeholder="Expert in authentic North Indian cuisine..." /></div>
+      <div class="form-group">
+        <label>Cuisine Type</label>
+        <select id="setup-cuisine">
+          <option value="north_indian">North Indian</option>
+          <option value="south_indian">South Indian</option>
+          <option value="chinese">Chinese</option>
+          <option value="continental">Continental</option>
+          <option value="street_food">Street Food</option>
+          <option value="desserts">Desserts</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Experience Years</label><input type="number" id="setup-experience" placeholder="5" min="0" max="50" /></div>
+      <div class="form-row">
+        <div class="form-group"><label>City</label><input type="text" id="setup-city" placeholder="Pune" /></div>
+        <div class="form-group"><label>Pincode</label><input type="text" id="setup-pincode" placeholder="411001" maxlength="6" /></div>
+      </div>
+      <button class="btn btn-primary btn-full" id="setup-btn" onclick="createChefProfile()">Create Profile &amp; Start Cooking</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOMER DASHBOARD -->
+<div class="page" id="page-customer">
+  <div class="dashboard-wrap">
+    <div class="dashboard-header">
+      <div><h2>Customer Dashboard</h2><p id="customer-subtitle"></p></div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="auto-refresh"><div class="refresh-dot"></div>Auto-refresh 5s</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('customer','browse',this)">Browse Chefs</button>
+      <button class="tab" onclick="switchTab('customer','place',this)">Place Order</button>
+      <button class="tab" onclick="switchTab('customer','orders',this)">My Orders</button>
+    </div>
+    <div class="tab-content active" id="customer-tab-browse">
+      <div class="section-header"><div><h3>Available Chefs</h3><p>Click a chef to select for ordering</p></div></div>
+      <div class="filter-bar">
+        <input type="text" id="city-input" placeholder="Enter city (e.g. Pune)" value="Pune" />
+        <button class="btn btn-primary btn-sm" onclick="loadChefs()">Search</button>
+      </div>
+      <div id="chefs-container"><div class="empty-state"><div class="icon">👨‍🍳</div><h3>Find your chef</h3><p>Enter your city and click Search</p></div></div>
+    </div>
+    <div class="tab-content" id="customer-tab-place">
+      <div class="order-form">
+        <h3>Place an Order</h3>
+        <div class="alert alert-error" id="order-error"></div>
+        <div class="alert alert-success" id="order-success"></div>
+        <div class="form-group"><label>Selected Chef</label><input type="text" id="order-chef-display" placeholder="Select a chef from Browse tab first" readonly /></div>
+        <div class="form-group"><label>Delivery Address</label><input type="text" id="order-address" placeholder="123 MG Road, Koregaon Park" /></div>
+        <div class="form-row">
+          <div class="form-group"><label>City</label><input type="text" id="order-city" placeholder="Pune" /></div>
+          <div class="form-group"><label>Pincode</label><input type="text" id="order-pincode" placeholder="411001" maxlength="6" /></div>
+        </div>
+        <div class="form-group"><label>Special Instructions</label><input type="text" id="order-instructions" placeholder="Less spicy, no onions..." /></div>
+        <label style="margin-bottom:10px;display:block;">Order Items</label>
+        <div id="items-list"></div>
+        <button class="btn btn-outline btn-sm" onclick="addItem()" style="margin-bottom:18px;">+ Add Item</button>
+        <div class="order-total"><span class="lbl">Total Amount</span><span class="amount" id="order-total">₹0.00</span></div>
+        <button class="btn btn-primary btn-full" id="place-order-btn" onclick="placeOrder()">Place Order →</button>
+      </div>
+    </div>
+    <div class="tab-content" id="customer-tab-orders">
+      <div class="section-header">
+        <div><h3>My Orders</h3><p>Live order tracking</p></div>
+        <button class="btn btn-outline btn-sm" onclick="loadOrders()">↻ Refresh</button>
+      </div>
+      <div id="orders-container"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CHEF DASHBOARD -->
+<div class="page" id="page-chef">
+  <div class="dashboard-wrap">
+    <div class="dashboard-header">
+      <div><h2>Chef Dashboard</h2><p id="chef-subtitle"></p></div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="auto-refresh"><div class="refresh-dot"></div>Auto-refresh 5s</div>
+        <button class="btn btn-outline btn-sm" onclick="loadChefOrders()">↻ Refresh</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div><div style="font-weight:500;margin-bottom:4px;">Your Availability</div><div style="font-size:0.82rem;color:var(--text-muted);">Toggle to start or stop receiving orders</div></div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span id="chef-status-badge" class="badge badge-offline">Offline</span>
+          <button class="btn btn-success btn-sm" onclick="setChefStatus('available')">Go Available</button>
+          <button class="btn btn-danger btn-sm" onclick="setChefStatus('offline')">Go Offline</button>
+        </div>
+      </div>
+    </div>
+    <div class="section-header"><div><h3>Active Orders</h3><p>Orders assigned to you</p></div></div>
+    <div id="chef-orders-container"><div class="loading"><div class="spinner"></div>Loading orders...</div></div>
+  </div>
+</div>
+
+<!-- DELIVERY DASHBOARD -->
+<div class="page" id="page-delivery">
+  <div class="dashboard-wrap">
+    <div class="dashboard-header">
+      <div><h2>Delivery Dashboard</h2><p id="delivery-subtitle"></p></div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="auto-refresh"><div class="refresh-dot"></div>Auto-refresh 5s</div>
+        <button class="btn btn-outline btn-sm" onclick="loadDeliveryDashboard()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <!-- City Setup -->
+    <div class="card" style="margin-bottom:24px;" id="delivery-city-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-weight:500;margin-bottom:4px;">Your City</div>
+          <div style="font-size:0.82rem;color:var(--text-muted);">Set your city to see available deliveries</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span id="delivery-city-badge" style="font-size:0.85rem;color:var(--saffron-light);">Not set</span>
+          <input type="text" id="delivery-city-input" placeholder="Enter city" style="width:140px;" />
+          <button class="btn btn-primary btn-sm" onclick="setDeliveryCity()">Set City</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('delivery','available',this)">Available Orders</button>
+      <button class="tab" onclick="switchTab('delivery','mine',this)">My Deliveries</button>
+    </div>
+
+    <div class="tab-content active" id="delivery-tab-available">
+      <div class="section-header">
+        <div><h3>Available in your city</h3><p>Accept an order to start delivery</p></div>
+        <button class="btn btn-outline btn-sm" onclick="loadAvailableDeliveries()">↻ Refresh</button>
+      </div>
+      <div id="available-deliveries-container">
+        <div class="empty-state"><div class="icon">🛵</div><h3>Set your city first</h3><p>Enter your city above to see available orders</p></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="delivery-tab-mine">
+      <div class="section-header">
+        <div><h3>My Active Deliveries</h3><p>Orders you have accepted</p></div>
+        <button class="btn btn-outline btn-sm" onclick="loadMyDeliveries()">↻ Refresh</button>
+      </div>
+      <div id="my-deliveries-container">
+        <div class="loading"><div class="spinner"></div>Loading...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div class="page" id="page-admin">
+  <div class="dashboard-wrap">
+    <div class="dashboard-header"><div><h2>Admin Dashboard</h2><p>Manage HomeBite platform</p></div></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('admin','create',this)">Create Delivery Account</button>
+      <button class="tab" onclick="switchTab('admin','orders',this)">All Orders</button>
+    </div>
+    <div class="tab-content active" id="admin-tab-create">
+      <div class="order-form" style="max-width:480px;">
+        <h3>Create Delivery Person</h3>
+        <div class="alert alert-error" id="admin-error"></div>
+        <div class="alert alert-success" id="admin-success"></div>
+        <div class="form-group"><label>Full Name</label><input type="text" id="dp-name" placeholder="Amit Kumar" /></div>
+        <div class="form-group"><label>Email</label><input type="email" id="dp-email" placeholder="amit@homebite.com" /></div>
+        <div class="form-group"><label>Phone (optional)</label><input type="tel" id="dp-phone" placeholder="9876543210" /></div>
+        <div class="form-group"><label>Password</label><input type="password" id="dp-password" placeholder="Delivery@1234" /></div>
+        <button class="btn btn-primary btn-full" id="create-dp-btn" onclick="createDeliveryPerson()">Create Account</button>
+      </div>
+    </div>
+    <div class="tab-content" id="admin-tab-orders">
+      <div class="section-header">
+        <div><h3>Recent Orders</h3><p>All orders across platform</p></div>
+        <button class="btn btn-outline btn-sm" onclick="loadAdminOrders()">↻ Refresh</button>
+      </div>
+      <div id="admin-orders-container"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BASE = window.location.origin;
+const API = {
+  USERS:    `${BASE}/api/v1/users`,
+  CHEFS:    `${BASE}/api/v1/chefs`,
+  ORDERS:   `${BASE}/api/v1/orders`,
+  DELIVERY: `${BASE}/api/v1/deliveries`
+};
+let state={token:localStorage.getItem('hb_token')||null,user:JSON.parse(localStorage.getItem('hb_user')||'null'),chef:JSON.parse(localStorage.getItem('hb_chef')||'null'),selectedChef:null,items:[],timer:null};
+
+window.addEventListener('DOMContentLoaded',()=>{
+  if(state.token&&state.user)showDashboard();else showPage('home');
+  addItem();
+});
+
+async function api(method,url,body=null,auth=false){
+  const headers={'Content-Type':'application/json'};
+  if(auth&&state.token)headers['Authorization']=`Bearer ${state.token}`;
+  const res=await fetch(url,{method,headers,body:body?JSON.stringify(body):null});
+  if(res.status===401){
+    const isAuth=url.includes('/login')||url.includes('/register');
+    if(!isAuth&&state.token){clearSession();showPage('login');showAlert('login-error','⚠ Session expired. Please login again.');return{ok:false,status:401,data:{detail:'Session expired'}};}
+  }
+  const data=await res.json().catch(()=>({}));
+  return{ok:res.ok,status:res.status,data};
+}
+
+function showPage(name){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(`page-${name}`).classList.add('active');clearAlerts();}
+
+function showDashboard(){
+  const role=state.user?.role;
+  document.getElementById('nav-auth-btns').style.display='none';
+  document.getElementById('nav-user-info').style.display='flex';
+  document.getElementById('nav-username').textContent=state.user?.full_name?.split(' ')[0]||'User';
+  const badge=document.getElementById('nav-role-badge');
+  badge.textContent=role?.replace('_',' ');badge.className=`nav-role-badge badge-${role}`;
+  stopTimer();
+  if(role==='customer'){document.getElementById('customer-subtitle').textContent=`Logged in as ${state.user?.email}`;showPage('customer');loadOrders();startTimer(()=>loadOrders(),5000);}
+  else if(role==='chef'){document.getElementById('chef-subtitle').textContent=`Logged in as ${state.user?.email}`;showPage('chef');loadChefDashboard();startTimer(()=>loadChefOrders(),5000);}
+  else if (role === 'delivery_person') {document.getElementById('delivery-subtitle').textContent = `Logged in as ${state.user?.email}`;showPage('delivery');loadDeliveryDashboard();startTimer(() => { loadAvailableDeliveries(); loadMyDeliveries(); }, 5000);}
+  else if(role==='admin')showPage('admin');
+}
+
+function clearSession(){
+  state.token=null;state.user=null;state.chef=null;
+  localStorage.removeItem('hb_token');localStorage.removeItem('hb_user');localStorage.removeItem('hb_chef');
+  document.getElementById('nav-auth-btns').style.display='flex';document.getElementById('nav-user-info').style.display='none';stopTimer();
+}
+
+function switchTab(dashboard,name,btn){
+  document.querySelectorAll(`#page-${dashboard} .tab`).forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll(`#page-${dashboard} .tab-content`).forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');document.getElementById(`${dashboard}-tab-${name}`).classList.add('active');
+  if(dashboard==='customer'&&name==='orders')loadOrders();
+  if(dashboard==='admin'&&name==='orders')loadAdminOrders();
+}
+
+function clearAlerts(){document.querySelectorAll('.alert').forEach(a=>{a.classList.remove('visible');a.textContent='';})}
+function showAlert(id,msg,type='error'){const el=document.getElementById(id);if(!el)return;el.className=`alert alert-${type} visible`;el.textContent=msg;}
+function startTimer(fn,ms){stopTimer();state.timer=setInterval(fn,ms);}
+function stopTimer(){if(state.timer){clearInterval(state.timer);state.timer=null;}}
+function toast(msg,type='info'){const icons={success:'✓',error:'✕',info:'→',warning:'⚠'};const el=document.createElement('div');el.className=`toast ${type}`;el.innerHTML=`<span>${icons[type]}</span> ${msg}`;document.getElementById('toast-container').appendChild(el);setTimeout(()=>el.remove(),3500);}
+
+async function registerUser(){
+  const btn=document.getElementById('reg-btn');btn.disabled=true;btn.textContent='Creating...';
+  const phone=document.getElementById('reg-phone').value.trim();
+  const role=document.getElementById('reg-role').value;
+  const payload={full_name:document.getElementById('reg-name').value.trim(),email:document.getElementById('reg-email').value.trim(),password:document.getElementById('reg-password').value,role};
+  if(phone)payload.phone=phone;
+  const{ok,data}=await api('POST',`${API.USERS}/register`,payload);
+  btn.disabled=false;btn.textContent='Create Account';
+  if(ok){
+    if(role==='chef'){
+      showAlert('register-success','✓ Account created! Setting up chef profile...','success');
+      const lr=await api('POST',`${API.USERS}/login`,{email:payload.email,password:payload.password});
+      if(lr.ok){
+        state.token=lr.data.access_token;localStorage.setItem('hb_token',lr.data.access_token);
+        const pr=await api('GET',`${API.USERS}/me`,null,true);
+        if(pr.ok){state.user=pr.data.user;localStorage.setItem('hb_user',JSON.stringify(state.user));}
+        document.getElementById('nav-auth-btns').style.display='none';
+        document.getElementById('nav-user-info').style.display='flex';
+        document.getElementById('nav-username').textContent=state.user?.full_name?.split(' ')[0];
+        const badge=document.getElementById('nav-role-badge');badge.textContent='chef';badge.className='nav-role-badge badge-chef';
+        showPage('chef-setup');
+      }
+    }else{showAlert('register-success','✓ Account created! Redirecting to login...','success');toast('Account created!','success');setTimeout(()=>showPage('login'),1500);}
+  }else{showAlert('register-error',data.detail||'Registration failed');}
+}
+
+async function loginUser(){
+  const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='Signing in...';
+  const{ok,data}=await api('POST',`${API.USERS}/login`,{email:document.getElementById('login-email').value.trim(),password:document.getElementById('login-password').value});
+  btn.disabled=false;btn.textContent='Sign In';
+  if(ok){
+    state.token=data.access_token;localStorage.setItem('hb_token',data.access_token);
+    const pr=await api('GET',`${API.USERS}/me`,null,true);
+    if(pr.ok){state.user=pr.data.user;localStorage.setItem('hb_user',JSON.stringify(state.user));}
+    toast('Welcome back!','success');showDashboard();
+  }else{showAlert('login-error',data.detail||'Invalid email or password');}
+}
+
+async function logout(){if(state.token)await api('POST',`${API.USERS}/logout`,null,true).catch(()=>{});clearSession();toast('Signed out','info');showPage('home');}
+
+async function createChefProfile(){
+  const btn=document.getElementById('setup-btn');btn.disabled=true;btn.textContent='Creating profile...';
+  const city=document.getElementById('setup-city').value.trim();const pincode=document.getElementById('setup-pincode').value.trim();
+  if(!city||!pincode){showAlert('setup-error','City and pincode are required');btn.disabled=false;btn.textContent='Create Profile & Start Cooking';return;}
+  if(!/^\d{6}$/.test(pincode)){showAlert('setup-error','Pincode must be 6 digits');btn.disabled=false;btn.textContent='Create Profile & Start Cooking';return;}
+  const{ok,data}=await api('POST',`${API.CHEFS}/`,{user_id:state.user.id,full_name:state.user.full_name,bio:document.getElementById('setup-bio').value.trim()||null,cuisine_type:document.getElementById('setup-cuisine').value,experience_years:parseInt(document.getElementById('setup-experience').value)||0,city,pincode},true);
+  btn.disabled=false;btn.textContent='Create Profile & Start Cooking';
+  if(ok){state.chef=data;localStorage.setItem('hb_chef',JSON.stringify(data));toast('Chef profile created!','success');showDashboard();}
+  else if(data.detail&&data.detail.includes('already exists')){toast('Profile already exists, loading dashboard...','info');await loadChefDashboard();}
+  else showAlert('setup-error',data.detail||'Failed to create profile');
+}
+
+async function loadChefDashboard(){
+  if(!state.chef){
+    const{ok,data}=await api('GET',`${API.CHEFS}/user/${state.user.id}`,null,true);
+    if(ok){state.chef=data;localStorage.setItem('hb_chef',JSON.stringify(data));}
+    else{showPage('chef-setup');return;}
+  }
+  updateChefBadge(state.chef.status);loadChefOrders();
+}
+
+function updateChefBadge(status){const badge=document.getElementById('chef-status-badge');if(badge){badge.textContent=status;badge.className=`badge badge-${status}`;}}
+
+async function setChefStatus(newStatus){
+  if(!state.chef?.id){toast('No chef profile found','error');return;}
+  const{ok,data}=await api('PATCH',`${API.CHEFS}/${state.chef.id}/status`,{status:newStatus},true);
+  if(ok){state.chef.status=newStatus;localStorage.setItem('hb_chef',JSON.stringify(state.chef));updateChefBadge(newStatus);toast(`Status: ${newStatus}`,'success');}
+  else toast(data.detail||'Failed to update status','error');
+}
+
+async function loadChefOrders(){
+  if(!state.chef?.id)return;
+  const container=document.getElementById('chef-orders-container');
+  const{ok,data,status}=await api('GET',`${API.ORDERS}/chef/${state.chef.id}`,null,true);
+  if(status===401)return;
+  if(!ok){container.innerHTML=`<div class="empty-state"><div class="icon">⚠️</div><h3>Error</h3><p>${data.detail||'API error'}</p></div>`;return;}
+  if(!data.length){container.innerHTML=`<div class="empty-state"><div class="icon">🍳</div><h3>No active orders</h3><p>Go Available to start receiving orders</p></div>`;return;}
+  container.innerHTML=`<div class="orders-list">${data.map(order=>{
+    const canPrepare=order.status==='chef_assigned';const canReady=order.status==='preparing';
+    return `<div class="card">
+      <div class="card-header"><div><div class="card-title">Order #${order.id}</div><div class="card-sub">${new Date(order.created_at).toLocaleString()} · 📍 ${order.delivery_address}</div></div><span class="badge badge-${order.status}">${order.status.replace(/_/g,' ')}</span></div>
+      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:10px;">${order.items.map(i=>`${i.name} ×${i.qty} @ ₹${i.price}`).join(' · ')}</div>
+      ${order.special_instructions?`<div style="font-size:0.8rem;color:var(--warning);margin-bottom:10px;">📝 ${order.special_instructions}</div>`:''}
+      <div class="card-footer">
+        <div class="order-amount">₹${order.total_amount.toFixed(2)}</div>
+        <div class="card-actions">
+          ${canPrepare?`<button class="btn btn-warning btn-sm" onclick="updateOrderStatus(${order.id},'preparing')">🍳 Start Preparing</button>`:''}
+          ${canReady?`<button class="btn btn-success btn-sm" onclick="updateOrderStatus(${order.id},'ready_for_pickup')">📦 Mark Ready</button>`:''}
+          ${order.status==='ready_for_pickup'?`<span style="color:var(--success);font-size:0.82rem;">✓ Ready — waiting for pickup</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+async function updateOrderStatus(orderId,newStatus){
+  const{ok,data}=await api('PATCH',`${API.ORDERS}/${orderId}/status`,{status:newStatus},true);
+  if(ok){toast(`Order #${orderId} → ${newStatus.replace(/_/g,' ')}`,'success');loadChefOrders();}
+  else toast(data.detail||'Failed to update','error');
+}
+
+const CUISINE_EMOJI={north_indian:'🍛',south_indian:'🥘',chinese:'🥡',continental:'🍝',street_food:'🌮',desserts:'🍮'};
+
+async function loadChefs(){
+  const city=document.getElementById('city-input').value.trim();
+  if(!city){toast('Enter a city first','error');return;}
+  const container=document.getElementById('chefs-container');
+  container.innerHTML='<div class="loading"><div class="spinner"></div>Finding chefs...</div>';
+  const{ok,data,status}=await api('GET',`${API.CHEFS}/available/${encodeURIComponent(city)}`,null,true);
+  if(status===401)return;
+  if(!ok||!data.length){container.innerHTML=`<div class="empty-state"><div class="icon">🍳</div><h3>No chefs available</h3><p>No home chefs available in ${city} right now</p></div>`;return;}
+  container.innerHTML=`<div class="chefs-grid">${data.map(chef=>`
+    <div class="chef-card ${state.selectedChef?.id===chef.id?'selected':''}" onclick="selectChef(${JSON.stringify(chef).replace(/"/g,'&quot;')})">
+      <div class="chef-avatar">${CUISINE_EMOJI[chef.cuisine_type]||'👨‍🍳'}</div>
+      <div class="chef-name">${chef.full_name}</div>
+      <div class="chef-cuisine">${chef.cuisine_type.replace('_',' ')}</div>
+      <div class="chef-meta"><div class="chef-meta-item">⭐ ${chef.rating.toFixed(1)}</div><div class="chef-meta-item">📦 ${chef.total_orders} orders</div><div class="chef-meta-item">📍 ${chef.city}</div></div>
+      <span class="badge badge-${chef.status}">${chef.status}</span>
+    </div>`).join('')}</div>`;
+}
+
+function selectChef(chef){
+  state.selectedChef=chef;
+  document.querySelectorAll('.chef-card').forEach(c=>c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  document.getElementById('order-chef-display').value=`${chef.full_name} — ${chef.cuisine_type.replace('_',' ')}`;
+  document.getElementById('order-city').value=chef.city;
+  document.getElementById('order-pincode').value=chef.pincode;
+  toast(`Chef ${chef.full_name} selected`,'success');
+}
+
+function addItem(){const id=Date.now();state.items.push({id,name:'',qty:1,price:0});renderItems();}
+function removeItem(id){state.items=state.items.filter(i=>i.id!==id);renderItems();}
+function updateItem(id,field,value){const item=state.items.find(i=>i.id===id);if(item)item[field]=field==='qty'?parseInt(value)||1:field==='price'?parseFloat(value)||0:value;updateTotal();}
+function renderItems(){
+  document.getElementById('items-list').innerHTML=state.items.map(item=>`
+    <div class="item-row">
+      <div class="form-group" style="margin:0"><input type="text" placeholder="Item name" value="${item.name}" oninput="updateItem(${item.id},'name',this.value)" /></div>
+      <div class="form-group" style="margin:0"><input type="number" placeholder="Qty" min="1" value="${item.qty}" oninput="updateItem(${item.id},'qty',this.value)" /></div>
+      <div class="form-group" style="margin:0"><input type="number" placeholder="₹ Price" min="0" step="0.5" value="${item.price||''}" oninput="updateItem(${item.id},'price',this.value)" /></div>
+      <button class="btn btn-ghost" onclick="removeItem(${item.id})" style="padding:10px;color:var(--error);margin-bottom:16px;">✕</button>
+    </div>`).join('');
+  updateTotal();
+}
+function updateTotal(){const total=state.items.reduce((s,i)=>s+i.qty*i.price,0);document.getElementById('order-total').textContent=`₹${total.toFixed(2)}`;}
+
+async function placeOrder(){
+  if(!state.selectedChef){showAlert('order-error','Please select a chef from Browse tab first');return;}
+  const validItems=state.items.filter(i=>i.name.trim()&&i.qty>0&&i.price>0);
+  if(!validItems.length){showAlert('order-error','Add at least one item with name, quantity and price');return;}
+  const address=document.getElementById('order-address').value.trim();const city=document.getElementById('order-city').value.trim();const pincode=document.getElementById('order-pincode').value.trim();
+  if(!address||!city||!pincode){showAlert('order-error','Fill in delivery address, city and pincode');return;}
+  if(!/^\d{6}$/.test(pincode)){showAlert('order-error','Pincode must be 6 digits');return;}
+  const btn=document.getElementById('place-order-btn');btn.disabled=true;btn.textContent='Placing order...';
+  const{ok,data}=await api('POST',`${API.ORDERS}/`,{user_id:state.user.id,chef_id: state.selectedChef.id,items:validItems.map(({name,qty,price})=>({name,qty,price})),delivery_address:address,city,pincode,special_instructions:document.getElementById('order-instructions').value.trim()||null},true);
+  btn.disabled=false;btn.textContent='Place Order →';
+  if(ok){showAlert('order-success',`✓ Order #${data.id} placed! Chef is being assigned...`,'success');toast(`Order #${data.id} placed!`,'success');state.items=[];addItem();setTimeout(()=>{document.querySelectorAll('#page-customer .tab')[2].click();},2000);}
+  else showAlert('order-error',data.detail||'Failed to place order');
+}
+
+const PIPELINE_STAGES=[{key:'pending',label:'Pending',icon:'⏳'},{key:'chef_assigned',label:'Chef Assigned',icon:'👨‍🍳'},{key:'preparing',label:'Preparing',icon:'🍳'},{key:'ready_for_pickup',label:'Ready',icon:'📦'},{key:'out_for_delivery',label:'On the way',icon:'🛵'},{key:'delivered',label:'Delivered',icon:'✓'}];
+
+function buildPipeline(currentStatus){
+  const idx=PIPELINE_STAGES.findIndex(s=>s.key===currentStatus);if(idx===-1)return'';
+  return`<div class="pipeline">${PIPELINE_STAGES.map((stage,i)=>{const dc=i<idx?'done':i===idx?'active':'';const lc=i<idx?'done':'';return`<div class="pipeline-step"><div class="pipeline-dot ${dc}">${i<idx?'✓':stage.icon}</div><div class="pipeline-label">${stage.label}</div></div>${i<PIPELINE_STAGES.length-1?`<div class="pipeline-line ${lc}"></div>`:''}`}).join('')}</div>`;
+}
+
+async function loadOrders(){
+  if(!state.user)return;
+  const container=document.getElementById('orders-container');
+  container.innerHTML='<div class="loading"><div class="spinner"></div>Loading orders...</div>';
+  const{ok,data,status}=await api('GET',`${API.ORDERS}/user/${state.user.id}`,null,true);
+  if(status===401)return;
+  if(!ok){container.innerHTML=`<div class="empty-state"><div class="icon">⚠️</div><h3>Could not load orders</h3><p>${data.detail||'API error'}</p></div>`;return;}
+  if(!data.length){container.innerHTML=`<div class="empty-state"><div class="icon">🍽️</div><h3>No orders yet</h3><p>Place your first order from the Place Order tab</p></div>`;return;}
+  container.innerHTML = `<div class="orders-list">${data.map(order => `
+    <div class="card" style="${order.status === 'delivered' ? 'border-color: var(--success); background: rgba(76,175,130,0.05);' : order.status === 'cancelled' ? 'border-color: var(--error); background: rgba(224,82,82,0.05);' : ''}">
+      <div class="card-header"><div><div class="card-title">Order #${order.id}</div><div class="card-sub">${new Date(order.created_at).toLocaleString()}</div></div><span class="badge badge-${order.status}">${order.status.replace(/_/g,' ')}</span></div>
+      ${buildPipeline(order.status)}
+      <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">${order.items.map(i=>`${i.name} ×${i.qty}`).join(' · ')}</div>
+      <div class="card-footer">
+        <div class="order-amount">₹${order.total_amount.toFixed(2)}</div>
+        <div class="card-actions">${['pending','chef_assigned'].includes(order.status)?`<button class="btn btn-danger btn-sm" onclick="cancelOrder(${order.id})">Cancel</button>`:''}</div>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+async function cancelOrder(orderId){
+  if(!confirm('Cancel this order?'))return;
+  const{ok,data}=await api('POST',`${API.ORDERS}/${orderId}/cancel`,null,true);
+  if(ok){toast(`Order #${orderId} cancelled`,'info');loadOrders();}else toast(data.detail||'Cannot cancel','error');
+}
+
+// ═══════════════════════════════════
+// DELIVERY DASHBOARD
+// ═══════════════════════════════════
+function setDeliveryCity() {
+  const city = document.getElementById('delivery-city-input').value.trim();
+  if (!city) { toast('Enter a city', 'error'); return; }
+  localStorage.setItem('hb_delivery_city', city);
+  document.getElementById('delivery-city-badge').textContent = city;
+  toast(`City set to ${city}`, 'success');
+  loadAvailableDeliveries();
+}
+
+function loadDeliveryDashboard() {
+  const city = localStorage.getItem('hb_delivery_city');
+  if (city) {
+    document.getElementById('delivery-city-badge').textContent = city;
+    document.getElementById('delivery-city-input').value = city;
+    loadAvailableDeliveries();
+  }
+  loadMyDeliveries();
+}
+
+async function loadAvailableDeliveries() {
+  const city = localStorage.getItem('hb_delivery_city');
+  const container = document.getElementById('available-deliveries-container');
+  if (!city) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">🛵</div><h3>Set your city first</h3><p>Enter your city above to see available orders</p></div>`;
+    return;
+  }
+  container.innerHTML = '<div class="loading"><div class="spinner"></div>Finding available orders...</div>';
+  const { ok, data, status } = await api('GET', `${API.DELIVERY}/available/${encodeURIComponent(city)}`, null, true);
+  if (status === 401) return;
+  if (!ok) { container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Error</h3><p>${data.detail||'API error'}</p></div>`; return; }
+  if (!data.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">🍽️</div><h3>No orders available</h3><p>No unassigned deliveries in ${city} right now. Auto-refreshing...</p></div>`;
+    return;
+  }
+  container.innerHTML = `<div class="orders-list">${data.map(d => `
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Order #${d.order_id}</div>
+          <div class="card-sub">📍 ${d.delivery_address}, ${d.city} — ${d.pincode}</div>
+        </div>
+        <span class="badge badge-pending">Available</span>
+      </div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px;">Est. ${d.estimated_delivery_minutes} mins · Posted ${new Date(d.created_at).toLocaleTimeString()}</div>
+      <div class="card-footer">
+        <div></div>
+        <button class="btn btn-success btn-sm" onclick="acceptDelivery(${d.id})">✓ Accept Delivery</button>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+async function acceptDelivery(deliveryId) {
+  const { ok, data } = await api('POST', `${API.DELIVERY}/${deliveryId}/accept`, {
+    delivery_person_id: state.user.id,
+    delivery_person_name: state.user.full_name,
+    delivery_person_phone: state.user.phone || '',
+  }, true);
+  if (ok) {
+    toast('Delivery accepted!', 'success');
+    // switch to My Deliveries tab
+    document.querySelectorAll('#page-delivery .tab')[1].click();
+    loadMyDeliveries();
+    loadAvailableDeliveries();
+  } else {
+    toast(data.detail || 'Could not accept — someone else may have taken it', 'warning');
+    loadAvailableDeliveries();
+  }
+}
+
+async function loadMyDeliveries() {
+  if (!state.user) return;
+  const container = document.getElementById('my-deliveries-container');
+  const { ok, data, status } = await api('GET', `${API.DELIVERY}/person/${state.user.id}`, null, true);
+  if (status === 401) return;
+  if (!ok) { container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Error</h3><p>${data.detail||'API error'}</p></div>`; return; }
+  if (!data.length) { container.innerHTML = `<div class="empty-state"><div class="icon">🛵</div><h3>No deliveries yet</h3><p>Accept an order from the Available tab</p></div>`; return; }
+
+  const active = data.filter(d => !['delivered','failed'].includes(d.status));
+  const done = data.filter(d => d.status === 'delivered');
+
+  container.innerHTML = `
+    ${active.length ? `
+      <div style="margin-bottom:8px;font-size:0.85rem;color:var(--text-muted);font-weight:500;">ACTIVE (${active.length})</div>
+      <div class="orders-list" style="margin-bottom:24px;">${active.map(d => myDeliveryCard(d)).join('')}</div>` : ''}
+    ${done.length ? `
+      <div style="margin-bottom:8px;font-size:0.85rem;color:var(--text-muted);font-weight:500;">COMPLETED (${done.length})</div>
+      <div class="orders-list">${done.map(d => myDeliveryCard(d)).join('')}</div>` : ''}
+    ${!active.length && !done.length ? `<div class="empty-state"><div class="icon">🛵</div><h3>No deliveries yet</h3></div>` : ''}`;
+}
+
+function myDeliveryCard(d) {
+  return `<div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Order #${d.order_id}</div>
+        <div class="card-sub">📍 ${d.delivery_address}, ${d.city} — ${d.pincode}</div>
+      </div>
+      <span class="badge badge-${d.status}">${d.status.replace(/_/g,' ')}</span>
+    </div>
+    <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px;">
+      Est. ${d.estimated_delivery_minutes} mins
+      ${d.accepted_at ? ` · Accepted: ${new Date(d.accepted_at).toLocaleTimeString()}` : ''}
+      ${d.picked_up_at ? ` · Picked up: ${new Date(d.picked_up_at).toLocaleTimeString()}` : ''}
+      ${d.delivered_at ? ` · Delivered: ${new Date(d.delivered_at).toLocaleTimeString()}` : ''}
+    </div>
+    <div class="card-footer">
+      <div></div>
+      <div class="card-actions">
+        ${d.status==='accepted' ? `<button class="btn btn-info btn-sm" onclick="updateDelivery(${d.id},'picked_up')">📦 Picked Up</button>` : ''}
+        ${d.status==='picked_up' ? `<button class="btn btn-warning btn-sm" onclick="updateDelivery(${d.id},'out_for_delivery')">🛵 Out for Delivery</button>` : ''}
+        ${d.status==='out_for_delivery' ? `<button class="btn btn-success btn-sm" onclick="updateDelivery(${d.id},'delivered')">✓ Mark Delivered</button>` : ''}
+        ${d.status==='delivered' ? `<span style="color:var(--success);font-size:0.82rem;">✓ Delivered</span>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+async function updateDelivery(deliveryId, newStatus) {
+  const body = { status: newStatus };
+  const { ok, data } = await api('PATCH', `${API.DELIVERY}/${deliveryId}/status`, body, true);
+  if (ok) {
+    toast(`Delivery → ${newStatus.replace(/_/g,' ')}`, 'success');
+    loadMyDeliveries();
+  } else {
+    toast(data.detail || 'Failed to update', 'error');
+  }
+}
+
+async function createDeliveryPerson(){
+  const btn=document.getElementById('create-dp-btn');btn.disabled=true;btn.textContent='Creating...';
+  const phone=document.getElementById('dp-phone').value.trim();
+  const payload={full_name:document.getElementById('dp-name').value.trim(),email:document.getElementById('dp-email').value.trim(),password:document.getElementById('dp-password').value,role:'delivery_person'};
+  if(phone)payload.phone=phone;
+  const{ok,data}=await api('POST',`${API.USERS}/admin/create-user`,payload,true);
+  btn.disabled=false;btn.textContent='Create Account';
+  if(ok){showAlert('admin-success',`✓ Created: ${data.email}`,'success');toast('Delivery person created!','success');['dp-name','dp-email','dp-phone','dp-password'].forEach(id=>document.getElementById(id).value='');}
+  else showAlert('admin-error',data.detail||'Failed to create account');
+}
+
+async function loadAdminOrders(){
+  const container=document.getElementById('admin-orders-container');
+  container.innerHTML='<div class="loading"><div class="spinner"></div>Loading...</div>';
+  const results=[];
+  for(let userId=1;userId<=20;userId++){const{ok,data}=await api('GET',`${API.ORDERS}/user/${userId}`,null,true);if(ok&&data.length)results.push(...data);}
+  results.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  if(!results.length){container.innerHTML=`<div class="empty-state"><div class="icon">📋</div><h3>No orders found</h3></div>`;return;}
+  container.innerHTML=`<div class="orders-list">${results.slice(0,20).map(order=>`
+    <div class="card">
+      <div class="card-header"><div><div class="card-title">Order #${order.id} — User #${order.user_id}</div><div class="card-sub">${new Date(order.created_at).toLocaleString()} · Chef #${order.chef_id||'Unassigned'}</div></div><span class="badge badge-${order.status}">${order.status.replace(/_/g,' ')}</span></div>
+      <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">${order.items.map(i=>`${i.name} ×${i.qty}`).join(' · ')}</div>
+      <div class="card-footer"><div class="order-amount">₹${order.total_amount.toFixed(2)}</div></div>
+    </div>`).join('')}</div>`;
+}
+</script>
+</body>
+</html>

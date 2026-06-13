@@ -43,9 +43,6 @@ Thumbs.db
 # Kubernetes secrets — never commit real secrets
 k8s/secrets/homebite-secrets.yaml
 
-# Generated files
-nginx/index.html
-
 # Terraform
 terraform/.terraform/
 terraform/terraform.tfstate
