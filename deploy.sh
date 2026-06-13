@@ -10,7 +10,26 @@ echo "===== HomeBite AWS Deployment Setup ====="
 echo ""
 
 # ─────────────────────────────────────────
-# COLLECT VALUES FROM USER
+# STEP 1 — SWAP SPACE
+# Kafka needs ~600MB — t3.micro has 1GB total
+# ─────────────────────────────────────────
+
+echo "Setting up swap space (needed for Kafka)..."
+if [ ! -f /swapfile ]; then
+  sudo fallocate -l 2G /swapfile
+  sudo chmod 600 /swapfile
+  sudo mkswap /swapfile
+  sudo swapon /swapfile
+  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+  echo "✅ Swap configured (2GB)"
+else
+  echo "✅ Swap already exists — skipping"
+fi
+
+echo ""
+
+# ─────────────────────────────────────────
+# STEP 2 — COLLECT VALUES FROM USER
 # ─────────────────────────────────────────
 
 echo "Enter RDS endpoint (from terraform output):"
