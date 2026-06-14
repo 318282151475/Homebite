@@ -14,8 +14,6 @@
 
 A **production-grade microservices food delivery platform** connecting customers with home chefs. Built with event-driven architecture, supporting three deployment models — local Docker Compose, Kubernetes, and AWS EC2 with Terraform.
 
-> Built as a portfolio project targeting Senior Backend/Platform/DevOps roles (20 LPA). Every architectural decision has a reason — documented below.
-
 ---
 
 ## 📋 Table of Contents
@@ -310,7 +308,7 @@ Frontend  → http://localhost
 ### 3. AWS EC2 — Terraform + Docker Compose
 
 Deploys HomeBite on AWS using:
-- **EC2 t2.small** — runs all Docker containers
+- **EC2 t3.macro** — runs all Docker containers
 - **RDS MySQL** — managed database (replaces MySQL container)
 - **VPC** — private network with public/private subnets
 - **Terraform** — provisions all infrastructure as code
@@ -409,7 +407,7 @@ terraform destroy
 
 ```
 VPC (10.0.0.0/16)
-├── Public Subnet  → EC2 t2.small (Docker + all services)
+├── Public Subnet  → EC2 t3.macro(Docker + all services)
 ├── Private Subnet → RDS MySQL db.t3.micro
 ├── Internet Gateway
 ├── Route Tables
@@ -714,20 +712,10 @@ JWT is stateless by design. Redis with TTL matching token expiry gives O(1) blac
 ### 5. Why Nginx auth_request
 Centralizes authentication without duplicating code in every service.
 
-### 6. Why EC2 + Docker Compose Over EKS for AWS Deployment
-```
-EKS: $0.10/hour control plane = ~₹6,000/month minimum
-EC2 t2.small: ~₹600/month, stop when not using
-
-For portfolio demo: EC2 + Docker Compose = same microservices
-architecture at fraction of the cost.
-K8s manifests still available for production path.
-```
-
-### 7. Why Terraform for AWS Infrastructure
+### 6. Why Terraform for AWS Infrastructure
 Infrastructure as code — entire AWS setup reproducible with one command. Version controlled, documented, destroyable cleanly.
 
-### 8. Why pool_pre_ping=False with aiomysql
+### 7. Why pool_pre_ping=False with aiomysql
 Known incompatibility between SQLAlchemy 2.0.x pool_pre_ping and aiomysql non-root users. aiomysql manages connection health internally — disabling SQLAlchemy ping is the correct approach.
 
 ---
