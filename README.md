@@ -12,8 +12,6 @@
 
 A **production-grade microservices food delivery platform** connecting customers with home chefs. Built with event-driven architecture, Kubernetes deployment, and full observability stack.
 
-> Built as a portfolio project targeting Senior Backend/DevOps roles (20 LPA). Every architectural decision has a reason — documented below.
-
 ---
 
 ## 📋 Table of Contents
