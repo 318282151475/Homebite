@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: user-service
-          image: tejassh1701/homebite-user-service:latest
+          image: tejassh1701/homebite-user-service:db04f33a86b8b2019a073b9c67d38b7ef5800b6c
           # imagePullPolicy: Always ensures latest image is pulled
           # Never use "latest" tag in real production — use commit SHA
           # e.g. homebite/user-service:abc1234
